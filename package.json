@@ -16,7 +16,8 @@
     "specjev": "dist/cli.js"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "docs",
     "examples",
     "benchmarks/README.md",
@@ -36,6 +37,7 @@
     "demo": "node dist/cli.js run --input examples/parser-speedup.json --replay examples/parser-jev-response.json --format human",
     "demo:all": "node scripts/run-demos.mjs",
     "benchmark:demos": "node scripts/benchmark-demos.mjs",
+    "verify:pack": "npm run build && node scripts/verify-pack.mjs",
     "prepack": "npm run check && npm run test && npm run build"
   },
   "engines": {

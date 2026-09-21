@@ -1,26 +1,47 @@
-# JevRev 0.1.0 release sheet
+# JevRev release process
 
 Tagline: **Pick the right path before you build.**
 
-Package: `jevrev@0.1.0`  
-Publish artifact: `jevrev-0.1.0.tgz`  
-Git tag: `v0.1.0`
+Current tagged version: `v0.1.0`
 
-## Publish sequence
+The existing `v0.1.0` tag predates the automated release workflow. Do not move
+or recreate it. The first automated npm release must use a new package version
+and matching tag.
+
+## Automated publish sequence
+
+Publishing is gated by a GitHub Release. Before creating one:
+
+1. Merge a pull request whose CI matrix is green.
+2. Update `package.json` and `CHANGELOG.md` to the intended version.
+3. Create and push the matching `v<version>` tag from the verified commit.
+4. Publish a GitHub Release for that tag.
+
+The release workflow rejects a tag that does not exactly match the package
+version, repeats the TypeScript checks, tests, build, Python runtime tests, and
+package-content verification, then publishes with npm provenance.
+
+Configure npm Trusted Publishing for this repository and
+`.github/workflows/release.yml`. The workflow uses GitHub OIDC and does not
+require a long-lived npm token.
+
+`workflow_dispatch` performs the entire verification path without publishing.
+
+## Local verification
 
 ```bash
 npm ci
 npm run check
 npm test
 npm run build
-npm pack --dry-run
-npm publish --access public
+npm run verify:pack
 ```
 
 Repository: https://github.com/Alex314618-create/JevRev
 
-The package metadata points at the public repository above. Do not publish a
-live API key, local model, or `benchmarks/results/` output.
+The package metadata points at the public repository above. The pack verifier
+rejects source files, tests, source maps, Python caches, benchmark results, and
+`.env`. Never publish a live API key or local model.
 
 ## Included
 

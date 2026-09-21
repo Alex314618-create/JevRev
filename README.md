@@ -1,5 +1,7 @@
 # JevRev
 
+[![CI](https://github.com/Alex314618-create/JevRev/actions/workflows/ci.yml/badge.svg)](https://github.com/Alex314618-create/JevRev/actions/workflows/ci.yml)
+
 > Pick the right path before you build.
 
 Cut 3-7 candidate approaches to the one or two worth building before you spend

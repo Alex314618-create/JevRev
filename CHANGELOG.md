@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Add cross-platform Node.js and Python CI matrices.
+- Add automated npm publishing through GitHub Releases with version gating and
+  provenance.
+- Verify the exact npm package contents before release and exclude generated
+  source maps from the published artifact.
+- Add weekly Dependabot updates for npm and GitHub Actions dependencies.
+
 ## 0.1.0 — 2026-09-20
 
 First JevRev release.
