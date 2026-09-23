@@ -148,6 +148,19 @@ export JEVREV_JEV_API_KEY="..."
 node dist/cli.js sift --input proposals.json --provider jev
 ```
 
+On Windows, enter an authorized TypeSafe key locally without putting it in
+shell history. The script checks access through `GET /v1/models` before saving
+`TYPESAFE_API_KEY` for the current Windows user:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/configure-jev-api.ps1
+```
+
+Restart Codex or the terminal after configuring. To verify an existing key,
+run the same script with `-VerifyOnly`. A user-level environment variable is
+local to Windows but is not an encrypted secret store; `-Scope Process` is
+available for a temporary key when invoked in the same PowerShell session.
+
 Local SemIf through llama.cpp on Windows:
 
 ```powershell
