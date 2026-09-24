@@ -238,6 +238,17 @@ describe("JevLoop pure state machine", () => {
     slow.criterion_results = [{ id: "tests", status: "pass", freshness: "fresh", source_round: 1, head_revision: "head", observation_ids: ["npm-test"], metric_ids: [], artifact_evaluation_ids: [] }];
     expect(() => submit(issued, { ...audit, evidence_sha256: loopHash(slow) }, slow)).toThrow("round budget");
   });
+  it("rejects evidence whose command durations exceed the declared wall time in total", () => {
+    const issued = issue();
+    const over = structuredClone(evidence);
+    over.wall_ms = 15;
+    over.observations = [
+      { id: "npm-test", exit_code: 0, duration_ms: 10, head_revision: "head", termination: "exited", source: "recorded" },
+      { id: "api-check", exit_code: 0, duration_ms: 10, head_revision: "head", termination: "exited", source: "recorded" },
+    ];
+    over.criterion_results = [{ id: "tests", status: "pass", freshness: "fresh", source_round: 1, head_revision: "head", observation_ids: ["npm-test"], metric_ids: [], artifact_evaluation_ids: [] }];
+    expect(() => submit(issued, { ...audit, evidence_sha256: loopHash(over) }, over)).toThrow("round budget");
+  });
   it("requires budget pause and rejects contradictory audit actions", () => {
     const over: RoundEvidence = { ...evidence, wall_ms: spec.budget.pause_total_wall_ms };
     expect(() => submit(issue(), { ...audit, evidence_sha256: loopHash(over) }, over)).toThrow("round budget");

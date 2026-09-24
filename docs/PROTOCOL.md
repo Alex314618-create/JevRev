@@ -197,7 +197,8 @@ Packets may attach content-addressed `artifacts` (source, diff, demo, or
 screenshot) and typed `artifact_evaluations`. Current imported evaluations are
 explicitly marked `source: "imported"`; a future trusted recorder can add a
 runner-produced source without changing the packet shape. Decide receives
-artifact excerpts and evaluation summaries, never arbitrary repository access.
+artifact metadata and redacted evaluation summaries, never raw artifact excerpts
+or arbitrary repository access.
 
 These are normal results and exit with code `0`. Nonzero exit codes remain
 reserved for usage/input, provider, protocol, and unexpected failures. The

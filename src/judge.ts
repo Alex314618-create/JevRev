@@ -40,6 +40,7 @@ export interface TypeSafeJudgeOptions {
 export const DEFAULT_JEV_URL = "https://api.typesafe.ai";
 const DEFAULT_LOCAL_URL = "http://127.0.0.1:4877";
 const DEFAULT_LOCAL_BATCH_SIZE = 8;
+const DEFAULT_LOCAL_TIMEOUT_MS = 120_000;
 const DEFAULT_SEMIF_URL = "http://127.0.0.1:4878";
 const DEFAULT_SEMIF_MODEL = "Qwen3.5-4B-Q4_K_M";
 const DEFAULT_SEMIF_TOP_LOGPROBS = 20;
@@ -86,6 +87,7 @@ type FetchLike = (
 export interface LocalJudgeOptions {
   baseUrl?: string;
   batchSize?: number;
+  timeoutMs?: number;
   fetch?: FetchLike;
 }
 
@@ -398,6 +400,7 @@ function mapLocalResponse(
 export class LocalJudge implements Judge {
   readonly #url: URL;
   readonly #batchSize: number;
+  readonly #timeoutMs: number;
   readonly #fetch: FetchLike;
 
   constructor(options: LocalJudgeOptions = {}) {
@@ -405,6 +408,10 @@ export class LocalJudge implements Judge {
     this.#batchSize = options.batchSize ?? DEFAULT_LOCAL_BATCH_SIZE;
     if (!Number.isInteger(this.#batchSize) || this.#batchSize < 1) {
       throw new ProviderError("Local scorer batch size must be a positive integer");
+    }
+    this.#timeoutMs = options.timeoutMs ?? DEFAULT_LOCAL_TIMEOUT_MS;
+    if (!Number.isInteger(this.#timeoutMs) || this.#timeoutMs < 1) {
+      throw new ProviderError("Local scorer timeout must be a positive integer");
     }
     this.#fetch = options.fetch ?? globalThis.fetch;
   }
@@ -416,33 +423,48 @@ export class LocalJudge implements Judge {
       batch_size: this.#batchSize,
     };
 
-    let response: Response;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const requestPromise = (async (): Promise<unknown> => {
+      let response: Response;
+      try {
+        response = await this.#fetch(this.#url, {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(request),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        throw new ProviderError("Local scorer request failed", { cause: error });
+      }
+
+      if (!response.ok) {
+        throw new ProviderError(
+          `Local scorer returned HTTP ${response.status} ${response.statusText}`.trim(),
+        );
+      }
+
+      try {
+        return (await response.json()) as unknown;
+      } catch (error) {
+        throw new ProtocolError("Local scorer returned invalid JSON", { cause: error });
+      }
+    })();
     try {
-      response = await this.#fetch(this.#url, {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(request),
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new ProviderError(`Local scorer request timed out after ${this.#timeoutMs}ms`));
+        }, this.#timeoutMs);
       });
-    } catch (error) {
-      throw new ProviderError("Local scorer request failed", { cause: error });
+      const raw = await Promise.race([requestPromise, timeout]);
+      return mapLocalResponse(raw, plan, planned);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
     }
-
-    if (!response.ok) {
-      throw new ProviderError(
-        `Local scorer returned HTTP ${response.status} ${response.statusText}`.trim(),
-      );
-    }
-
-    let raw: unknown;
-    try {
-      raw = (await response.json()) as unknown;
-    } catch (error) {
-      throw new ProtocolError("Local scorer returned invalid JSON", { cause: error });
-    }
-    return mapLocalResponse(raw, plan, planned);
   }
 }
 

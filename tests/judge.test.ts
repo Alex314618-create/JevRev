@@ -214,6 +214,17 @@ describe("judge adapters", () => {
     );
   });
 
+  it("times out a local scorer that never completes", async () => {
+    const plan = buildQuestionPlan(minimalRequest);
+    const fetch = async (_input: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+      });
+
+    await expect(new LocalJudge({ fetch, timeoutMs: 10 }).evaluate(plan))
+      .rejects.toThrow("timed out after 10ms");
+  });
+
   it("maps SemIf option logits into score and noul answers", async () => {
     const plan = buildQuestionPlan(minimalRequest);
     const requests: SemIfChatRequest[] = [];

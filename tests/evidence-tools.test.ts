@@ -1,7 +1,7 @@
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { recordArtifact } from "../src/evidence/artifact.js";
+import { DEFAULT_MAX_ARTIFACT_BYTES, recordArtifact } from "../src/evidence/artifact.js";
 import { recordMetric } from "../src/evidence/metric.js";
 import { evidenceNext, evidenceStatus, renderEvidenceStatus } from "../src/evidence/status.js";
 import { buildCampaign } from "../src/workflow/campaign.js";
@@ -148,6 +148,72 @@ describe("evidence metric, artifact, and status tools", () => {
     });
     expect(packet.requirement_results.find((item) => item.criterion_id === "api"))
       .toMatchObject({ status: "pass", artifact_evaluation_ids: ["demo-check"] });
+  });
+
+  it("requires a fresh evaluation when replacing an evaluated artifact", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const artifactPath = resolve(root, "tests", `tmp-replace-artifact-${Math.random().toString(16).slice(2)}.txt`);
+    temporaryFiles.push(artifactPath);
+    writeFileSync(artifactPath, "first", "utf8");
+    await recordArtifact({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      artifactId: "report",
+      file: artifactPath,
+      workspace: root,
+      evaluation: { id: "report-check", evaluator: "smoke", criterionId: "api", status: "pass", summary: "first" },
+      requirementRefs: ["constraint:api"],
+    });
+    writeFileSync(artifactPath, "second", "utf8");
+
+    await expect(recordArtifact({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      artifactId: "report",
+      file: artifactPath,
+      workspace: root,
+      replace: true,
+    })).rejects.toThrow("requires a replacement evaluation");
+    await recordArtifact({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      artifactId: "report",
+      file: artifactPath,
+      workspace: root,
+      replace: true,
+      evaluation: { id: "report-check", evaluator: "smoke", criterionId: "api", status: "fail", summary: "second" },
+      requirementRefs: ["constraint:api"],
+    });
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(evidencePath, "utf8")));
+    expect(bundle.packets[0]?.requirement_results.find((item) => item.criterion_id === "api")?.status).toBe("fail");
+  });
+
+  it("requires a fresh result when replacing a linked metric", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const metric = { id: "throughput", kind: "metric" as const, criterion_id: "speed", unit: "ops/s", direction: "higher" as const, baseline_samples: [10, 11], candidate_samples: [20, 21] };
+    await recordMetric({ evidencePath, candidateId: workOrder.candidate_id, metric, resultStatus: "pass", requirementRefs: ["success:speed"] });
+    await expect(recordMetric({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      metric: { ...metric, candidate_samples: [1, 2] },
+      replace: true,
+    })).rejects.toThrow("requires --result");
+  });
+
+  it("rejects artifacts above the configured byte limit", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const artifactPath = resolve(root, "tests", `tmp-large-artifact-${Math.random().toString(16).slice(2)}.txt`);
+    temporaryFiles.push(artifactPath);
+    writeFileSync(artifactPath, "12345", "utf8");
+    expect(DEFAULT_MAX_ARTIFACT_BYTES).toBeGreaterThan(5);
+    await expect(recordArtifact({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      artifactId: "large",
+      file: artifactPath,
+      workspace: root,
+      maxBytes: 4,
+    })).rejects.toThrow("exceeds the 4-byte limit");
   });
 
   it("shows missing evidence and a concrete next action", async () => {

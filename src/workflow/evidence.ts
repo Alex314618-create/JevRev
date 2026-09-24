@@ -133,13 +133,13 @@ export function prepareDecision(
     if (packet.candidate_sha256 !== workOrder.candidate_sha256) {
       throw new ProtocolError(`Evidence candidate hash does not match campaign: ${candidate.id}`);
     }
-    const longestCommandMs = packet.observations.reduce(
-      (longest, observation) => Math.max(longest, observation.duration_ms),
+    const totalCommandMs = packet.observations.reduce(
+      (total, observation) => total + observation.duration_ms,
       0,
     );
-    if (packet.development.wall_ms < longestCommandMs) {
+    if (packet.development.wall_ms < totalCommandMs) {
       throw new ProtocolError(
-        `Development wall_ms is less than recorded command duration for ${candidate.id}`,
+        `Development wall_ms is less than recorded command duration total for ${candidate.id}`,
       );
     }
 
@@ -227,7 +227,12 @@ export function prepareDecision(
     );
     const requiredCommandsPassed =
       requiredCommands.length > 0 &&
-      requiredCommands.every((observation) => observation.exit_code === 0);
+      requiredCommands.every((observation) =>
+        observation.exit_code === 0 &&
+        observation.termination !== "timed_out" &&
+        observation.termination !== "spawn_error" &&
+        observation.termination !== "buffer_exceeded",
+      );
     if (requiredCommands.length === 0) addReason("MISSING_REQUIRED_COMMAND");
     else if (!requiredCommandsPassed) addReason("REQUIRED_COMMAND_FAILED");
 

@@ -44,8 +44,22 @@ export async function recordMetric(options: RecordMetricOptions) {
     if (existingIndex >= 0 && !options.replace) {
       throw new ProtocolError(`Metric already exists: ${options.metric.id}; pass --replace to overwrite it`);
     }
+    const linkedProbes = packet.probe_results.filter((result) => result.metric_ids.includes(options.metric.id));
+    const linkedRequirements = packet.requirement_results.filter((result) => result.metric_ids.includes(options.metric.id));
+    const hasExistingLinks = linkedProbes.length > 0 || linkedRequirements.length > 0;
+    if (existingIndex >= 0 && options.replace && hasExistingLinks && options.resultStatus === undefined) {
+      throw new ProtocolError(`Replacing linked metric ${options.metric.id} requires --result pass|fail|unknown`);
+    }
+    if (existingIndex >= 0 && options.replace && hasExistingLinks &&
+        packet.metrics[existingIndex]!.criterion_id !== options.metric.criterion_id) {
+      throw new ProtocolError(`Cannot change the criterion of linked metric ${options.metric.id}`);
+    }
     if (existingIndex >= 0) packet.metrics[existingIndex] = options.metric;
     else packet.metrics.push(options.metric);
+
+    if (options.resultStatus !== undefined) {
+      for (const result of [...linkedProbes, ...linkedRequirements]) result.status = options.resultStatus;
+    }
 
     for (const probeId of options.probeIds ?? []) {
       const probe = packet.probe_results.find((result) => result.evidence_id === probeId);

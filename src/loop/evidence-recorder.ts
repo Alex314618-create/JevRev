@@ -4,6 +4,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { z } from "zod";
 import { InputError, ProtocolError } from "../domain/errors.js";
 import { executeCommand } from "../evidence/recorder.js";
+import { DEFAULT_MAX_ARTIFACT_BYTES } from "../evidence/artifact.js";
 import { loopHash, roundEvidenceSchema, type RoundEvidence } from "./schemas.js";
 import { loadLoop } from "./store.js";
 
@@ -234,6 +235,9 @@ async function recordLoopArtifactUnlocked(options: RecordLoopArtifactOptions): P
   const realFile = await realpath(file).catch((error) => { throw new InputError(`Could not read Loop artifact ${options.file}`, { cause: error }); });
   const relativePath = relative(workspace, realFile).replaceAll("\\", "/");
   if (relativePath.startsWith("..") || isAbsolute(relativePath)) throw new InputError("Loop artifact escapes the workspace");
+  const metadata = await statFile(realFile).catch((error) => { throw new InputError(`Could not stat Loop artifact ${options.file}`, { cause: error }); });
+  if (!metadata.isFile()) throw new InputError(`Loop artifact is not a regular file: ${options.file}`);
+  if (metadata.size > DEFAULT_MAX_ARTIFACT_BYTES) throw new InputError(`Loop artifact exceeds the ${DEFAULT_MAX_ARTIFACT_BYTES}-byte limit: ${options.file}`);
   const content = await readFile(realFile).catch((error) => { throw new InputError(`Could not read Loop artifact ${options.file}`, { cause: error }); });
   const artifact = {
     id: options.evaluationId ?? options.artifactId,

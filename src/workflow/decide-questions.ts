@@ -1,4 +1,5 @@
 import { noul, score, type Question } from "@typesafe-ai/sdk";
+import { basename } from "node:path";
 import type { QuestionPlan } from "../questions.js";
 import type { PreparedDecision } from "./evidence.js";
 
@@ -31,6 +32,62 @@ const REPRODUCIBILITY_RUBRIC = [
   "The result has repeatable observations with minor remaining uncertainty.",
   "The result is well controlled, repeatable, and independently falsifiable.",
 ] as const;
+
+const PRIVATE_KEY_BLOCK = /-----BEGIN [^-\r\n]*PRIVATE KEY-----[\s\S]*?-----END [^-\r\n]*PRIVATE KEY-----/gi;
+const SECRET_VALUE = /(?:\b(?:bearer|basic)\s+[^\s"',;]+|(?:api)?key_[A-Za-z0-9_-]{8,}|sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9_]{8,}|AIza[0-9A-Za-z_-]{12,}|(?:api[_-]?key|access[_-]?token|token|password|secret)\s*[:=]\s*[^\s"',;]+)/gi;
+const URL_SECRET_VALUE = /([?&](?:api[_-]?key|access[_-]?token|token|password|secret)=)[^&#\s]+/gi;
+
+function redactJudgeText(value: string): string {
+  return value
+    .replace(PRIVATE_KEY_BLOCK, "[REDACTED]")
+    .replace(SECRET_VALUE, "[REDACTED]")
+    .replace(URL_SECRET_VALUE, "$1[REDACTED]");
+}
+
+function judgeObservation(observation: NonNullable<PreparedDecision["viable"][number]["packet"]>["observations"][number]) {
+  return {
+    id: observation.id,
+    kind: observation.kind,
+    command: basename(observation.argv[0] ?? "unknown"),
+    argument_count: Math.max(0, observation.argv.length - 1),
+    exit_code: observation.exit_code,
+    termination: observation.termination,
+    duration_ms: observation.duration_ms,
+    required: observation.required,
+    ...(observation.stdout_sha256 === undefined ? {} : { stdout_sha256: observation.stdout_sha256 }),
+    ...(observation.stderr_sha256 === undefined ? {} : { stderr_sha256: observation.stderr_sha256 }),
+    ...(observation.stdout_bytes === undefined ? {} : { stdout_bytes: observation.stdout_bytes }),
+    ...(observation.stderr_bytes === undefined ? {} : { stderr_bytes: observation.stderr_bytes }),
+  };
+}
+
+function judgeArtifact(
+  artifact: NonNullable<NonNullable<PreparedDecision["viable"][number]["packet"]>["artifacts"]>[number],
+) {
+  return {
+    id: artifact.id,
+    path: artifact.path,
+    media_type: artifact.media_type,
+    sha256: artifact.sha256,
+    size_bytes: artifact.size_bytes,
+  };
+}
+
+function judgeArtifactEvaluation(
+  evaluation: NonNullable<NonNullable<PreparedDecision["viable"][number]["packet"]>["artifact_evaluations"]>[number],
+) {
+  return {
+    id: evaluation.id,
+    source: evaluation.source,
+    evaluator: evaluation.evaluator,
+    artifact_ids: evaluation.artifact_ids,
+    ...(evaluation.criterion_id === undefined ? {} : { criterion_id: evaluation.criterion_id }),
+    status: evaluation.status,
+    ...(evaluation.score === undefined ? {} : { score: evaluation.score }),
+    summary: redactJudgeText(evaluation.summary),
+    ...(evaluation.output_sha256 === undefined ? {} : { output_sha256: evaluation.output_sha256 }),
+  };
+}
 
 export function buildDecidePlan(
   prepared: PreparedDecision,
@@ -130,13 +187,13 @@ export function buildDecidePlan(
         })(),
         revision: evaluation.packet?.revision,
         development: evaluation.packet?.development,
-        observations: evaluation.packet?.observations,
+        observations: evaluation.packet?.observations.map(judgeObservation),
         metric_summaries: evaluation.objective.metrics,
         requirement_results: evaluation.packet?.requirement_results,
-        artifacts: evaluation.packet?.artifacts,
-        artifact_evaluations: evaluation.packet?.artifact_evaluations,
+        artifacts: evaluation.packet?.artifacts?.map(judgeArtifact),
+        artifact_evaluations: evaluation.packet?.artifact_evaluations?.map(judgeArtifactEvaluation),
         changed_files: evaluation.packet?.changed_files,
-        known_failures: evaluation.packet?.known_failures,
+        known_failure_count: evaluation.packet?.known_failures.length,
       })),
     })) as QuestionPlan["state"];
 

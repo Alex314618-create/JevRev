@@ -43,6 +43,7 @@ function packetFixture(
         exit_code: options.commandExit ?? 0,
         duration_ms: 1_000,
         required: true,
+        termination: "exited",
       },
     ],
     metrics: [
@@ -268,6 +269,23 @@ describe("evidence-backed decide policy", () => {
   it("blinds finalist IDs and titles in the decide judge state", () => {
     const campaign = campaignFixture();
     const prepared = prepareDecision(campaign, bundleFixture(campaign));
+    prepared.viable[0]!.packet!.observations[0]!.argv = ["node", "--token=super-secret-value"];
+    prepared.viable[0]!.packet!.artifacts = [{
+      id: "report",
+      path: "reports/report.json",
+      media_type: "application/json",
+      sha256: "a".repeat(64),
+      size_bytes: 128,
+      content_excerpt: "private-key-value",
+    }];
+    prepared.viable[0]!.packet!.artifact_evaluations = [{
+      id: "report-check",
+      source: "imported",
+      evaluator: "smoke",
+      artifact_ids: ["report"],
+      status: "pass",
+      summary: "Bearer sk-secret-value apikey_2190623406482794407ebe2d951f3519 and https://example.test/?token=private-token",
+    }];
     const plan = buildDecidePlan(prepared);
     const serialized = JSON.stringify(plan.state);
 
@@ -275,6 +293,14 @@ describe("evidence-backed decide policy", () => {
     expect(serialized).not.toContain("Reduce allocations");
     expect(serialized).not.toContain("byte-fast-path");
     expect(serialized).not.toContain("Byte fast path");
+    expect(serialized).not.toContain("super-secret-value");
+    expect(serialized).not.toContain("private-key-value");
+    expect(serialized).not.toContain("sk-secret-value");
+    expect(serialized).not.toContain("apikey_2190623406482794407ebe2d951f3519");
+    expect(serialized).not.toContain("private-token");
+    expect(serialized).toContain("[REDACTED]");
+    expect(serialized).toContain('"command":"node"');
+    expect(serialized).toContain('"sha256":"' + "a".repeat(64) + '"');
   });
 
   it("recomputes sample statistics from raw values", () => {
@@ -400,6 +426,34 @@ describe("evidence-backed decide policy", () => {
     expect(result.winner).toBe(second.candidate_id);
     expect(result.evaluations.find((item) => item.candidate_id === first.candidate_id)?.reasons)
       .toContain("REQUIRED_COMMAND_FAILED");
+  });
+
+  it("does not treat a timed-out zero exit as passed evidence", () => {
+    const campaign = campaignFixture();
+    const packet = packetFixture(campaign, 0);
+    packet.observations[0]!.termination = "timed_out";
+    const prepared = prepareDecision(campaign, bundleFixture(campaign, [packet, packetFixture(campaign, 1)]));
+
+    expect(prepared.evaluations.find((item) => item.candidate_id === packet.candidate_id)?.reasons)
+      .toContain("REQUIRED_COMMAND_FAILED");
+  });
+
+  it("rejects a wall budget that is smaller than total recorded command time", () => {
+    const campaign = campaignFixture();
+    const packet = packetFixture(campaign, 0);
+    packet.observations.push({
+      id: "second-test",
+      kind: "command",
+      argv: ["npm", "test", "--second"],
+      exit_code: 0,
+      duration_ms: 1_000,
+      required: true,
+      termination: "exited",
+    });
+    packet.development.wall_ms = 1_500;
+
+    expect(() => prepareDecision(campaign, bundleFixture(campaign, [packet, packetFixture(campaign, 1)])))
+      .toThrow("recorded command duration total");
   });
 
   it("replays a decide plan after deterministic gates leave one finalist", async () => {

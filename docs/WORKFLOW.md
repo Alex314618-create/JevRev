@@ -78,6 +78,13 @@ interactive debugging run because command output may contain secrets. Repeated
 `--probe` and `--requirement` flags bind the real exit status to frozen evidence
 slots.
 
+Command arguments and artifact excerpts remain local evidence. Before a Decide
+request is sent to a provider, JevRev reduces observations to the executable
+name, exit/termination state, timings, byte counts, and output digests; artifact
+content excerpts and raw argument values are not sent. Do not put credentials in
+commands or artifacts anyway: the evidence file is intentionally inspectable on
+disk. Text artifacts are capped at 16 MiB before hashing and reading.
+
 Concurrent evidence writes are serialized. If a process dies while holding the
 lock, JevRev fails closed; verify that no writer is active before removing the
 reported `.lock` file manually.
@@ -95,12 +102,21 @@ evaluator result. `jevrev evidence status` is the read-only handoff view: it
 lists missing/failed requirements and probes and tells the host whether to
 collect evidence, revise/stop, or call Decide.
 
+Replacing a linked metric requires a new `--result`. Replacing an artifact that
+already has an evaluation requires a replacement evaluation with the same
+evaluation ID; the linked status is refreshed from that result. This prevents a
+new sample or file from inheriting an old pass decision.
+
 Use `jevrev evidence status --next` after an interruption to print the first
 missing evidence slot. It is a resume hint, not an executor.
 
 `decide` first checks deterministic evidence. Only viable finalists are sent
 to Jev (or a supported local judge) for narrow evidence questions. The result
 is one of:
+
+The legacy local scorer has a 120-second request timeout by default. A stalled
+local model is reported as a provider failure instead of leaving the command
+blocked indefinitely.
 
 - `winner`: one candidate is ready to integrate;
 - `merge`: independently viable, complementary candidates deserve a combined

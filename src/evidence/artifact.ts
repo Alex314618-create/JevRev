@@ -10,6 +10,8 @@ import {
   writeEvidenceBundle,
 } from "./store.js";
 
+export const DEFAULT_MAX_ARTIFACT_BYTES = 16 * 1024 * 1024;
+
 export interface ArtifactEvaluationInput {
   id: string;
   evaluator: string;
@@ -31,6 +33,7 @@ export interface RecordArtifactOptions {
   evaluation?: ArtifactEvaluationInput;
   probeIds?: readonly string[];
   requirementRefs?: readonly string[];
+  maxBytes?: number;
 }
 
 const MEDIA_TYPES: Record<string, string> = {
@@ -71,7 +74,7 @@ async function safeArtifactPath(workspaceInput: string, fileInput: string) {
   }
   const metadata = await stat(file);
   if (!metadata.isFile()) throw new InputError(`Artifact is not a regular file: ${fileInput}`);
-  return { absolute: file, relative: pathFromWorkspace.replaceAll("\\", "/") };
+  return { absolute: file, relative: pathFromWorkspace.replaceAll("\\", "/"), sizeBytes: metadata.size };
 }
 
 function parseRequirement(reference: string) {
@@ -94,7 +97,13 @@ export async function recordArtifact(options: RecordArtifactOptions) {
     throw new InputError("Artifact evaluation score must be between 0 and 1");
   }
   const artifactPath = await safeArtifactPath(options.workspace ?? process.cwd(), options.file);
+  const maxBytes = options.maxBytes ?? DEFAULT_MAX_ARTIFACT_BYTES;
+  if (!Number.isInteger(maxBytes) || maxBytes < 1) throw new InputError("max artifact bytes must be a positive integer");
+  if (artifactPath.sizeBytes > maxBytes) {
+    throw new InputError(`Artifact exceeds the ${maxBytes}-byte limit: ${options.file}`);
+  }
   const bytes = await readFile(artifactPath.absolute);
+  if (bytes.length > maxBytes) throw new InputError(`Artifact exceeds the ${maxBytes}-byte limit: ${options.file}`);
   const mediaType = options.mediaType ?? inferredMediaType(artifactPath.absolute);
   const artifact = {
     id: options.artifactId,
@@ -114,6 +123,30 @@ export async function recordArtifact(options: RecordArtifactOptions) {
     if (artifactIndex >= 0 && !options.replace) {
       throw new ProtocolError(`Artifact already exists: ${artifact.id}; pass --replace to overwrite it`);
     }
+    const priorEvaluationIds = (packet.artifact_evaluations ?? [])
+      .filter((evaluation) => evaluation.artifact_ids.includes(artifact.id))
+      .map((evaluation) => evaluation.id);
+    if (artifactIndex >= 0 && options.replace && priorEvaluationIds.length > 0 && options.evaluation === undefined) {
+      throw new ProtocolError(`Replacing evaluated artifact ${artifact.id} requires a replacement evaluation`);
+    }
+    if (artifactIndex >= 0 && options.replace && priorEvaluationIds.length > 0 &&
+        (priorEvaluationIds.length !== 1 || options.evaluation?.id !== priorEvaluationIds[0])) {
+      throw new ProtocolError(`Replacing evaluated artifact ${artifact.id} requires the same evaluation ID: ${priorEvaluationIds.join(", ")}`);
+    }
+    const priorEvaluation = priorEvaluationIds.length === 1
+      ? packet.artifact_evaluations?.find((evaluation) => evaluation.id === priorEvaluationIds[0])
+      : undefined;
+    if (artifactIndex >= 0 && options.replace && priorEvaluation !== undefined && options.evaluation !== undefined &&
+        options.evaluation.criterionId !== undefined && priorEvaluation.criterion_id !== undefined &&
+        options.evaluation.criterionId !== priorEvaluation.criterion_id) {
+      throw new ProtocolError(`Replacing evaluated artifact ${artifact.id} cannot change its criterion`);
+    }
+    if (artifactIndex >= 0 && options.replace && priorEvaluationIds.length > 1) {
+      throw new ProtocolError(`Artifact ${artifact.id} has multiple evaluations; replace them explicitly before replacing the artifact`);
+    }
+    if (artifactIndex >= 0 && options.replace && priorEvaluationIds.length === 1 && priorEvaluation === undefined) {
+      throw new ProtocolError(`Artifact ${artifact.id} references a missing evaluation`);
+    }
     if (artifactIndex >= 0) packet.artifacts[artifactIndex] = artifact;
     else packet.artifacts.push(artifact);
 
@@ -124,7 +157,9 @@ export async function recordArtifact(options: RecordArtifactOptions) {
         source: "imported" as const,
         evaluator: options.evaluation.evaluator,
         artifact_ids: [artifact.id],
-        ...(options.evaluation.criterionId === undefined ? {} : { criterion_id: options.evaluation.criterionId }),
+        ...(options.evaluation.criterionId === undefined && priorEvaluation?.criterion_id === undefined
+          ? {}
+          : { criterion_id: options.evaluation.criterionId ?? priorEvaluation?.criterion_id }),
         status: options.evaluation.status,
         ...(options.evaluation.score === undefined ? {} : { score: options.evaluation.score }),
         summary: options.evaluation.summary,
@@ -135,6 +170,10 @@ export async function recordArtifact(options: RecordArtifactOptions) {
       }
       if (evaluationIndex >= 0) packet.artifact_evaluations[evaluationIndex] = evaluation;
       else packet.artifact_evaluations.push(evaluation);
+
+      for (const result of [...packet.probe_results, ...packet.requirement_results]) {
+        if (result.artifact_evaluation_ids?.includes(evaluation.id)) result.status = evaluation.status;
+      }
 
       for (const probeId of options.probeIds ?? []) {
         const probe = packet.probe_results.find((result) => result.evidence_id === probeId);

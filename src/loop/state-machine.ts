@@ -94,7 +94,7 @@ export function transition(state: LoopState, action: LoopTransition): LoopState 
           action.result.evidence_sha256 !== loopHash(evidence) ||
           evidence.wall_ms > state.active_order.budget.max_wall_ms ||
           evidence.changed_files.length > state.active_order.budget.max_changed_files ||
-          evidence.observations.some((observation) => observation.duration_ms > evidence.wall_ms) ||
+          evidence.observations.reduce((total, observation) => total + observation.duration_ms, 0) > evidence.wall_ms ||
           evidence.changed_files.some((file) => !isWithinAllowedScope(file, state.active_order!.allowed_scope))) {
         throw new ProtocolError("Audit evidence, spec, work order or round budget does not match current state");
       }
