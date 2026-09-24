@@ -263,4 +263,14 @@ npm run demo:engineering
 
 Node.js 20 or newer is required. JevRev is MIT licensed.
 
+## Contributing
+
+The most useful contribution is a recorded decision case: a real task you ran
+through JevRev, the route it picked, and the evidence behind it. Negative results
+count, and so does a task where Sift was correctly skipped.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution surface, the setup
+steps, and the claims this project cannot make. Contributors are listed in
+[`AUTHORS.md`](AUTHORS.md).
+
 [MIT](LICENSE)

@@ -1,0 +1,93 @@
+name: Decision case
+description: Contribute a real task you ran through JevRev, with the recorded evidence.
+title: "[Case] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most useful contribution we can receive. A recorded run on a task
+        we have never seen is worth more than a new feature.
+
+        Negative results count, and so do cases where the workflow was correctly
+        skipped. If Sift was the wrong tool for your task, that is exactly what we
+        want to know. Cases that reveal a boundary are more useful than cases that
+        confirm the pitch.
+
+  - type: input
+    id: task
+    attributes:
+      label: The task
+      description: One or two sentences. What were you actually trying to do?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: route
+    attributes:
+      label: Which part did you use?
+      multiple: true
+      options:
+        - JevSift
+        - JevLoop
+        - Evidence and Decide directly
+        - JevLong observation
+        - The full workflow
+    validations:
+      required: true
+
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and model
+      description: For example hosted Jev, local SemIf, a specific local model, or a replay fixture.
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS, Node.js version, and hardware if any number below is timing-sensitive.
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected conclusion, written before you ran it
+      description: |
+        Write this down first if you can. A prediction recorded before the run is
+        evidence. The same sentence written afterwards is not, and we will treat it
+        differently.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: The route JevRev selected, and whether it matched what you expected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        The commands and their results, output digests, token and wall-time numbers,
+        or a link to a committed fixture. Include the raw command line.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: verdict
+    attributes:
+      label: Would you run this through JevRev again?
+      description: |
+        Include "no". A correct bypass, or a run where the workflow added nothing,
+        is still a case worth posting.
+    validations:
+      required: true

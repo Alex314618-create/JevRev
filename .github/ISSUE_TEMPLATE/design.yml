@@ -1,0 +1,65 @@
+name: Design
+description: Settle a contract, policy, or interaction model before anyone writes the implementation.
+title: "[Design] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the contract itself is still open. If the shape is settled
+        and only the implementation is left, a regular issue is a better fit.
+
+        The last field matters most. A design issue is not finished until it says
+        how we will know it worked, and what would count as a failure.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What exists today, and what changed to make this worth deciding now?
+      placeholder: State the current shape in a few sentences. Link the files, issues, or docs that matter.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is the actual question? Separate the part that is genuinely hard from the part that is merely tedious.
+    validations:
+      required: true
+
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Design hypothesis
+      description: Your proposed direction, if you have one. Mark it as a hypothesis.
+    validations:
+      required: false
+
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: What this issue is explicitly not about. This is what keeps the scope from drifting.
+    validations:
+      required: true
+
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: The artifacts this issue should leave behind. Documents, contracts, fixtures, tests, decisions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance principle
+      description: How will we know this is done? What would count as a failure even if it looks finished?
+      placeholder: |
+        Succeeds when ...
+        Also a failure when ...
+    validations:
+      required: true

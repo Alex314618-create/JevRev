@@ -1,0 +1,64 @@
+name: Bug report
+description: A command, a decision, or a documented behavior is wrong.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A bug report is much easier to act on when the command line and its output
+        are included verbatim. Please paste them as they appeared.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The observed behavior, and which command produced it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+      description: If the behavior is documented somewhere, link the file or section.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows the problem. Attach or link a request file or fixture if you have one.
+      render: shell
+      placeholder: |
+        npm install
+        npm run build
+        node dist/cli.js <command> ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: JevRev version
+      description: The release tag, or the output of `git rev-parse --short HEAD`.
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS and Node.js version.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output
+      description: The full output, including any error text. Remove API keys before pasting.
+      render: text
+    validations:
+      required: false
