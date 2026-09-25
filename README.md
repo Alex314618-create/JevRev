@@ -87,6 +87,17 @@ The host LLM proposes a few materially different approaches. JevSift removes
 weak, duplicate, risky, or low-value paths before they consume implementation
 budget, then emits bounded work orders for the survivors.
 
+When it is unclear whether a task deserves a Sift campaign, use the cheap
+shadow check first:
+
+```bash
+jevrev activation --input activation.json --format json
+```
+
+It compares the estimated cost of a wrong mechanism with the cost of a few
+bounded probes and returns reason codes. It never calls Jev or changes the
+workflow automatically; the host agent still decides whether to run Sift.
+
 ### JevLoop: improve one artifact
 
 The host agent executes a bounded work order, records what actually happened,
@@ -170,6 +181,7 @@ from the user.
 
 | Command | Role in the LLM + Jev workflow |
 | --- | --- |
+| `jevrev activation` | Decide whether a Sift campaign is worth opening (shadow-only) |
 | `jevrev sift` | Decide which proposed approaches deserve a probe |
 | `jevrev loop` | Audit one artifact after each agent round |
 | `jevrev long` | Observe the health of a long-running session |
@@ -242,6 +254,7 @@ the screenshots.
 ## Read next
 
 - [Workflow guide](docs/WORKFLOW.md)
+- [Sift activation policy](docs/ACTIVATION.md)
 - [Protocol and JSON contracts](docs/PROTOCOL.md)
 - [Authority model](docs/AUTHORITY.md)
 - [JevLoop design](docs/JEVLOOP_DESIGN.md)

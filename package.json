@@ -29,6 +29,7 @@
     "docs/TEST_PLAN.md",
     "docs/WORKFLOW.md",
     "docs/EXTREME_TESTS.md",
+    "docs/ACTIVATION.md",
     "docs/JEVLOOP_DESIGN.md",
     "docs/JEVLONG_DESIGN.md",
     "docs/AUTHORITY.md",
@@ -41,6 +42,7 @@
     "skills/jevrev",
     "runtime",
     "README.md",
+    "README.zh-CN.md",
     "CHANGELOG.md",
     "RELEASE.md",
     "LICENSE"

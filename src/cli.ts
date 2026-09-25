@@ -43,6 +43,8 @@ import { watchLong } from "./long/watch.js";
 import { parseJsonBytes, readJsonFile } from "./io/json.js";
 import { formatZodError } from "./io/validation.js";
 import { reconsiderCandidate, renderReconsiderHuman } from "./reconsider.js";
+import { evaluateActivation, renderActivationHuman, renderActivationJson } from "./activation.js";
+import { activationRequestSchema, type ActivationRequest } from "./domain/schemas.js";
 
 type Provider = "jev" | "typesafe" | "local" | "semif";
 type OutputFormat = "human" | "json";
@@ -204,6 +206,7 @@ function parsePositiveNumber(value: string): number {
   }
   return parsed;
 }
+interface ActivationOptions { input: string; format: OutputFormat; output?: string }
 
 function parseLongWatchInterval(value: string): number {
   const parsed = Number(value);
@@ -495,6 +498,22 @@ async function checkEndpoint(url: string): Promise<string> {
   } catch (error) {
     return error instanceof Error ? `unreachable: ${error.message}` : "unreachable";
   }
+}
+
+async function runActivation(options: ActivationOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  let request: ActivationRequest;
+  try {
+    request = activationRequestSchema.parse(await readJson(options.input));
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new InputError(`Invalid activation request: ${formatZodError(error)}.`, { cause: error });
+    }
+    throw error;
+  }
+  const decision = evaluateActivation(request);
+  await emit(options.format === "json" ? renderActivationJson(decision) : renderActivationHuman(decision), options.output);
 }
 
 function endpointCheckFailed(state: string): boolean {
@@ -945,6 +964,15 @@ function createProgram(): Command {
     .action(async (raw: ReconsiderOptions) => runReconsider(raw));
   addLoopCommand(program);
   addLongCommand(program);
+
+  program
+    .command("activation")
+    .alias("activate")
+    .description("Report whether Sift is worthwhile (shadow-only, no workflow change)")
+    .requiredOption("-i, --input <path>", "activation request JSON path, or - for stdin")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write the rendered decision to a file")
+    .action(async (rawOptions: ActivationOptions) => runActivation(rawOptions));
 
   program
     .command("decide")

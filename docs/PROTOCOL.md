@@ -56,6 +56,17 @@ Rules:
 - `max_survivors` cannot exceed the number of candidates.
 - Free-text fields are length-bounded to keep the Jev state focused.
 
+## Sift activation (shadow)
+
+`jevrev activation` accepts a separate `jevrev.activation-request` envelope.
+It is deliberately not part of the rank request because activation decides
+whether to open Sift at all. The deterministic `activation-v1` policy returns
+a `jevrev.activation-decision` with `decision: "sift"` or `"bypass"`, the
+calculation, stable IDs, and reason codes. It always returns `shadow: true`:
+the command never calls Jev, starts work, or changes the host agent's next
+action. See [`ACTIVATION.md`](ACTIVATION.md) for field definitions and the
+planned corpus study before any active gate is considered.
+
 ## Output
 
 JSON mode returns one object:

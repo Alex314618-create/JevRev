@@ -1,10 +1,10 @@
 # JevRev
 
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRev 字标与骷髅插画" width="620" />
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev 字标与插画" width="620" />
 </p>
 
-<p align="center"><strong>给你 LLM 加一层决策。</strong></p>
+<p align="center"><strong>让 LLM 多想几条路，再把时间花在值得走的那条上。</strong></p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a>
@@ -16,44 +16,13 @@
   <a href="LICENSE"><img alt="MIT 许可" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
-> 筛选方案。一轮轮打分。盯着它跑完。
+LLM 很适合发散：它能同时提出几种实现，写出代码，跑测试，再根据结果修改。问题是，很多任务真正贵的地方不在“写第一版”，而在于走错方向之后才发现已经花掉了一轮时间和 token。
 
-你的 LLM 很能干。想方案、写代码、跑测试、改错，样样都行。
+JevRev 把 Jev 放在 LLM 旁边，专门做决策。LLM 负责提出方案和执行，JevRev 负责在关键节点筛选、复核和提醒。它是 CLI 和 JSON 协议，不是另一个 coding agent，也不会接管你的 Codex 会话。
 
-可“该选哪个方案”这种小事，也要它一件件拿主意？
+## 先跑一个完整例子
 
-这活交给 Jev 就好。它是 TypeSafe AI 的模型，只做判断，不写文本。你丢几个候选过去，它只回你“选哪个”“打几分”“有多大可能”，又快又便宜。
-
-JevRev 干的，就是把这个判断层搬到 LLM 旁边：筛方案、盯进度，把力气留在还值得继续的事上。
-
-想法和实现，让 LLM 去出。在继续烧时间和 token 之前，JevRev 先看一眼。
-
-它不是又一个 coding agent。它是给 agent 配的那套决策系统。
-
-## 先看个例子
-
-仓库里带了个能跑的案例：写一个更快的 CSV 解析器。
-
-LLM 给了两个方案。一个用正则抄近路，省事，纸面上也好看；另一个老老实实写状态机，慢一点。
-
-纸面上，抄近路的那个先赢。可正确性检查一跑，它挂了。状态机慢是慢，同样的检查却全过。凭证据翻了盘。
-
-<picture>
-  <source media="(max-width: 600px)" srcset=".github/assets/jevrev-decision-gate-mobile.svg">
-  <img src=".github/assets/jevrev-decision-gate.svg" alt="纸面上领先的正则捷径，没能通过必需的正确性检查；排名第二的状态机通过了，并在两者接受同样的探针之后成为胜出者。">
-</picture>
-
-想自己跑一遍：
-
-```bash
-git clone https://github.com/Alex314618-create/JevRev.git
-cd JevRev
-npm install
-npm run build
-npm run demo:workflow
-```
-
-为了让 demo 每次结果都一样，这里的 Jev 回答是预先录好的。除了它，别的都是真的：实现、正确性检查、benchmark 采样、输出摘要、最后的决定。
+仓库里的案例是一个 CSV 解析器提速任务。LLM 提出正则捷径和状态机两条路线。纸面排名更高的正则方案没有通过正确性检查，原本排第二的状态机反而成为最后的证据赢家：
 
 ```text
 Paper favorite: regex-shortcut
@@ -65,42 +34,70 @@ Evidence winner: indexed-state-machine
 Decision: winner -> integrate_winner
 ```
 
-想深挖，这三个文件可以点开看：[真正跑过的探针](benchmarks/workflow-fixture/probe.mjs)、[demo 的驱动脚本](scripts/run-workflow-demo.mjs)、[决策测试](tests/workflow-decide.test.ts)。吞吐量的实测值每台机器都不一样。真正让排名翻盘的也不是速度，是那条必须通过的正确性检查没过。
+这不是预先写好的“正确答案”：实现、命令退出码、benchmark 样本和输出摘要都在本地真实运行。Jev 的回答为了让 demo 可重复而使用 replay 文件。
 
-## 三个组成部分
+```bash
+git clone https://github.com/Alex314618-create/JevRev.git
+cd JevRev
+npm install
+npm run build
+npm run demo:workflow
+```
+
+想看细节，可以直接读[探针脚本](benchmarks/workflow-fixture/probe.mjs)、[demo 驱动](scripts/run-workflow-demo.mjs)和[决策测试](tests/workflow-decide.test.ts)。还有一个从零开始的 JSONL ingestion 案例，记录了错误捷径、三轮 Loop 和 Long 观察结果：[完整记录](benchmarks/real-jsonl-ingestion/README.md)。
+
+## 三个部分
 
 <picture>
   <source media="(max-width: 600px)" srcset=".github/assets/jevrev-product-roles-mobile.svg">
-  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift 选路径，JevLoop 复核单件产物，只读的 JevLong 盯着整个会话。Probe、Evidence、Decide 是三者共用的契约。">
+  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift 选路线，JevLoop 复核一个成果，JevLong 观察长跑会话" />
 </picture>
 
-### JevSift：定下做什么
+### JevSift：先决定试什么
 
-你的 LLM 会先给你几个方案，方向差得越远越好。JevSift 挨个过一遍，在它们占掉实现预算之前。太虚的、跟别人撞的、风险压不住的，都留不下来。
+LLM 先写出几张真正不同的方案卡。JevSift 用 Jev 做窄问题判断，再由确定性的策略去重、过滤硬约束风险，并为留下的方案生成有预算和停止条件的 probe work order。
 
-剩下的，才拿到一张范围明确的任务单。
+Sift 的结果是“哪些值得试”，不是“哪个已经正确”。真正的代码、测试和 benchmark 仍由宿主 agent 执行。
 
-### JevLoop：打磨一件产物
+如果任务是否值得开一轮 Sift 还说不准，可以先跑 shadow activation：
 
-你的 agent 按任务单做完一轮，如实记下发生了什么，交给 JevLoop。
+```bash
+jevrev activation --input activation.json --format json
+```
 
-Loop 先看证据。事实讲得清的，它自己就定了；讲不清的，才拿去问 Jev。然后它告诉你下一步干什么：继续做，先修，验证一遍，推倒重来，或者等人拍板。所有标准都过了？收工。
+它比较走错路线的预计代价和几次 bounded probe 的代价，输出稳定的 reason code。当前是 shadow-only：不会调用 Jev，不会替你启动或跳过 Sift。字段和后续评估计划见 [activation policy](docs/ACTIVATION.md)。
 
-`Probe`、`Evidence`、`Decide` 都在这里面，是 Loop 运转用的零件，不是另外几个界面。
+### JevLoop：每轮复核一个成果
 
-### JevLong：盯着整个会话
+Loop 面向一个正在演进的成果。agent 做完一轮后，用 recorder 记录命令、指标和产物，再把 round evidence 交给 Loop。Loop 先检查可验证的事实，再把剩下的窄问题交给 Jev，返回下一步：继续、修复、验证、重新规划、等待人工，或在所有标准都满足后完成。
 
-JevLong 盯的是长跑会话，只管报信。卡住了、反复失败、方向跑偏、工具调用出问题、预算快见底，它都会告诉你。正常跑到哪了，也告诉你。
+Loop 不启动 agent，也不替它改文件。`Probe`、`Evidence`、`Decide` 是这条工作流里的基础设施，不是额外的产品组件。
 
-它只报信，不动手：不悄悄给你改方向，不自动重试，不替你改文件，更不会自己把 agent 掐了。
+### JevLong：观察长跑会话
 
-`long watch` 是实时终端面板。非交互终端默认只输出一条紧凑状态；后台持续观察要显式加 `--stream`，固定采样用 `--iterations N`。需要完整快照时，用 `long status --format json`。
+Long 从 JSONL 事件中观察一个长时间运行的 agent，提示卡住、重复失败、方向漂移、工具调用异常和预算风险。它只报告，不暗中重试、改方向或结束 agent。
 
-说穿了就一句：费钱、要用脑子的活让 LLM 干；JevRev 负责拦住，不让流程一遍遍为走错的方向买单。
+```bash
+jevrev long watch --directory .jevrev/long
+jevrev long status --directory .jevrev/long --format json
+```
 
-## 在 Codex 里用
+非交互终端默认只打印一条紧凑状态；需要持续采样时显式加 `--stream` 或 `--iterations N`。
 
-先构建 CLI，再把仓库里附带的 skill 装进 Codex：
+## 在 Codex 里使用
+
+JevRev 的交互面就是命令行。Codex、Claude Code 或其他宿主 agent 只需在决策点调用 CLI，并把 JSON 文件作为上下游接口：
+
+```text
+agent 写出 proposals.json
+        -> jevrev sift -> campaign.json 和 probe work orders
+agent 执行 probe，记录 evidence.json
+        -> jevrev decide 或 jevrev loop audit -> 下一步
+agent/适配器发送 JSONL 事件
+        -> jevrev long -> 状态和提醒
+```
+
+安装仓库里的 skill 可以让 Codex 知道这些调用约定：
 
 ```bash
 npm install
@@ -108,7 +105,7 @@ npm run build
 node scripts/install-skill.mjs --target codex
 ```
 
-然后给 agent 这句指令：
+然后告诉宿主 agent：
 
 ```text
 Use JevRev for this task. Propose materially different approaches, ask JevRev
@@ -116,47 +113,47 @@ to sift them, run only the bounded probes, record the evidence, and let JevRev
 audit the next round before continuing.
 ```
 
-## 命令一览
+人仍然在关键位置做决定：定目标和约束、选择 provider、批准恢复或中止 Loop，以及决定是否整合最终成果。JevRev 只返回可检查的工作单、事实和 typed next action，不会在后台继续工作。
 
-| 命令 | 在 LLM + Jev 的工作流里管什么 |
+## 常用命令
+
+| 命令 | 用途 |
 | --- | --- |
-| `jevrev sift` | 定哪些方案值得动手试一次 |
-| `jevrev loop` | agent 每跑完一轮，复核一件产物 |
-| `jevrev long` | 盯一个长跑会话还健不健康 |
+| `jevrev activation` | 判断当前任务是否值得开 Sift（shadow-only） |
+| `jevrev sift` | 从候选方案中选出值得 probe 的路线 |
+| `jevrev loop` | 复核一个成果的每一轮进展 |
+| `jevrev long` | 观察一个长跑会话的状态 |
+| `jevrev evidence` / `jevrev decide` | 记录事实并对 probe 结果做最终裁定 |
 
-`jevrev evidence` 和 `jevrev decide` 更底层。JevSift 和 JevLoop 要吃的那份事实数据，就靠它们记下来、裁定掉。这两个不算第四、第五个产品组件。
-
-从源码跑的话，`jevrev` 换成 `node dist/cli.js`：
+从源码运行时，把 `jevrev` 换成 `node dist/cli.js`：
 
 ```bash
-node dist/cli.js sift --input proposals.json --replay examples/parser-jev-response.json
+node dist/cli.js sift --input examples/parser-speedup.json --replay examples/parser-jev-response.json
 ```
 
-## 模型接入
+## 接入 Jev 或本地模型
 
-Jev 走云端、跑本地、还是重放，JevRev 的决策边界都不变。
-
-POSIX shell 里用云端 Jev：
+同一套协议可以使用云端 Jev、本地 SemIf，或者 replay 文件。凭据放在环境变量里，不要写进命令参数、campaign 或 evidence：
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-node dist/cli.js sift --input proposals.json --provider jev \
+node dist/cli.js sift --input examples/parser-speedup.json --provider jev \
   --output campaign.json --summary
 ```
 
-Windows 上通过 llama.cpp 跑本地 SemIf：
+Windows 本地 SemIf：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-node dist/cli.js sift --input proposals.json --provider semif \
+node dist/cli.js sift --input examples/parser-speedup.json --provider semif `
   --output campaign.json --summary
 ```
 
-重放用的预置数据不需要联网，也不需要 API key。本地模型怎么搭，见 [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)。
+没有 API key 时可以直接使用仓库中的 replay。具体的本地模型设置见 [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)。
 
 ## 同一份需求，两种结果
 
-JevRev 不只在代码上有用。仓库里放了两个页面，同一份需求做出来的：一个是不用 JevRev、常规出稿的初版；另一个是交给 JevRev 选完路线之后，产出的证据档。
+仓库还提供了一个非代码案例：同一份页面需求，一份直接出稿，一份先经过 JevRev 路线筛选并留下验证记录。
 
 <table>
   <tr>
@@ -164,16 +161,17 @@ JevRev 不只在代码上有用。仓库里放了两个页面，同一份需求�
     <th width="50%">JevRev 路线</th>
   </tr>
   <tr>
-    <td><img src=".github/assets/one-shot-showcase/direct-hero.png" alt="常规做法直接出的初版页面" /></td>
-    <td><img src=".github/assets/one-shot-showcase/routed-hero.png" alt="让 JevRev 选完路线之后产出的证据档" /></td>
+    <td><img src=".github/assets/one-shot-showcase/direct-hero.png" alt="常规初版页面" /></td>
+    <td><img src=".github/assets/one-shot-showcase/routed-hero.png" alt="JevRev 路线页面" /></td>
   </tr>
 </table>
 
-这儿没有玄乎的视觉评分。关键是：Jev 选了哪条路，产物的结构、证据和最后的方向就一起变了。要拿两张截图互相比，先去看[源页面](benchmarks/one-shot-showcase/README.md)和它们的[验证记录](benchmarks/one-shot-showcase/VALIDATION.md)。
+这里不做“视觉分数更高”的空泛承诺。差异在于：选择路线时用的假设、探针和证据都被保留下来，最后的产物因此更容易复查。[案例说明](benchmarks/one-shot-showcase/README.md)和[验证记录](benchmarks/one-shot-showcase/VALIDATION.md)都在仓库里。
 
-## 延伸阅读
+## 文档
 
-- [工作流指南](docs/WORKFLOW.md)
+- [工作流](docs/WORKFLOW.md)
+- [activation policy](docs/ACTIVATION.md)
 - [协议与 JSON 契约](docs/PROTOCOL.md)
 - [权限模型](docs/AUTHORITY.md)
 - [JevLoop 设计](docs/JEVLOOP_DESIGN.md)
@@ -193,6 +191,6 @@ npm run demo:loop
 npm run demo:engineering
 ```
 
-需要 Node.js 20 或更高版本。JevRev 用 MIT 许可。
+需要 Node.js 20 或更高版本。JevRev 使用 MIT 许可。
 
 [MIT](LICENSE)

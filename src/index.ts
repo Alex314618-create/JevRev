@@ -2,6 +2,7 @@ export * from "./domain/errors.js";
 export * from "./domain/schemas.js";
 export * from "./judge.js";
 export * from "./policy.js";
+export * from "./activation.js";
 export * from "./questions.js";
 export * from "./report.js";
 export * from "./evidence/recorder.js";

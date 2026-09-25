@@ -44,6 +44,18 @@ Use JevSift when:
 Skip it for an obvious one-line fix, a cheap reversible change, or a task whose
 success criteria cannot be observed. Do not generate seven wording variants.
 
+For a borderline task, an agent may record a small activation assessment and
+run the shadow policy first:
+
+```bash
+jevrev activation --input activation.json --format json
+```
+
+Treat `decision` as a routing signal, not permission. The result is always
+shadow-only; it never replaces the host agent's decision and it never calls
+Sift for you. Keep the assessment in the run record so later human review can
+compare the prediction with the path actually taken.
+
 Use JevLoop when one implementation should improve over several bounded rounds
 and each round can return fresh command, metric, or artifact evidence. Freeze the
 contract first, let the host agent execute the work order, and submit the

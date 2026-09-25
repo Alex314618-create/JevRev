@@ -242,3 +242,96 @@ export type RankResult = z.infer<typeof rankResultSchema>;
 export type DecisionReason = z.infer<typeof reasonSchema>;
 export type NextAction = z.infer<typeof nextActionSchema>;
 export type EmptyReason = z.infer<typeof emptyReasonSchema>;
+
+const activationUnitScore = z.number().finite().min(0).max(1);
+
+export const activationRequestSchema = z
+  .object({
+    kind: z.literal("jevrev.activation-request"),
+    schema_version: z.literal("1"),
+    task: z
+      .object({
+        goal: z.string().trim().min(1).max(1_000),
+        context: z.string().trim().max(4_000).optional(),
+      })
+      .strict(),
+    assessment: z
+      .object({
+        candidate_count: z.number().int().min(1).max(12),
+        wrong_path_loss: activationUnitScore,
+        exploration_cost: activationUnitScore,
+        mechanism_diversity: activationUnitScore,
+        constraint_interaction: activationUnitScore,
+        uncertainty: activationUnitScore,
+        probeability: activationUnitScore,
+        reversibility: activationUnitScore,
+        existing_evidence: activationUnitScore,
+      })
+      .strict(),
+    // The first release is deliberately shadow-only. A future active mode must
+    // be introduced as a separately reviewed contract, not a CLI default.
+    mode: z.literal("shadow").optional().default("shadow"),
+  })
+  .strict();
+
+export const activationReasonSchema = z
+  .object({
+    code: z.enum([
+      "INSUFFICIENT_ALTERNATIVES",
+      "LOW_WRONG_PATH_LOSS",
+      "LOW_UNCERTAINTY",
+      "HIGH_REVERSIBILITY",
+      "STRONG_EXISTING_EVIDENCE",
+      "DIVERSE_MECHANISMS",
+      "INTERACTING_CONSTRAINTS",
+      "CHEAP_TO_PROBE",
+      "EXPLORATION_COST_TOO_HIGH",
+      "LOSS_OUTWEIGHS_EXPLORATION_COST",
+      "LOW_EXPECTED_VALUE",
+    ]),
+    signal: z.string().min(1).optional(),
+  })
+  .strict();
+
+export const activationDecisionSchema = z
+  .object({
+    kind: z.literal("jevrev.activation-decision"),
+    schema_version: z.literal("1"),
+    run_id: z.string().regex(/^jva_[a-f0-9]{12}$/),
+    policy: z
+      .object({
+        name: z.literal("activation-v1"),
+        mode: z.literal("shadow"),
+        thresholds: z
+          .object({
+            minimum_expected_loss: activationUnitScore,
+            minimum_advantage: activationUnitScore,
+            minimum_candidates: z.number().int().min(1).max(12),
+          })
+          .strict(),
+      })
+      .strict(),
+    task: z
+      .object({
+        goal: z.string().min(1),
+        task_id: z.string().regex(/^jvt_[a-f0-9]{12}$/),
+      })
+      .strict(),
+    assessment: activationRequestSchema.shape.assessment,
+    calculation: z
+      .object({
+        structural_factor: activationUnitScore,
+        adjusted_wrong_path_loss: activationUnitScore,
+        adjusted_exploration_cost: activationUnitScore,
+        advantage: z.number().min(-1).max(1),
+      })
+      .strict(),
+    decision: z.enum(["sift", "bypass"]),
+    shadow: z.literal(true),
+    reasons: z.array(activationReasonSchema).min(1).max(8),
+  })
+  .strict();
+
+export type ActivationRequest = z.infer<typeof activationRequestSchema>;
+export type ActivationReason = z.infer<typeof activationReasonSchema>;
+export type ActivationDecision = z.infer<typeof activationDecisionSchema>;

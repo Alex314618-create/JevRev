@@ -22,6 +22,45 @@ function run(args: string[], stdin?: string, env = process.env) {
 }
 
 describe("jevrev CLI", () => {
+  it("runs the shadow activation policy without a provider", () => {
+    const result = run([
+      "activation",
+      "--input",
+      "-",
+      "--format",
+      "json",
+    ], JSON.stringify({
+      kind: "jevrev.activation-request",
+      schema_version: "1",
+      task: { goal: "Choose a safe cache implementation" },
+      assessment: {
+        candidate_count: 4,
+        wrong_path_loss: 0.85,
+        exploration_cost: 0.2,
+        mechanism_diversity: 0.8,
+        constraint_interaction: 0.8,
+        uncertainty: 0.8,
+        probeability: 0.8,
+        reversibility: 0.2,
+        existing_evidence: 0.1,
+      },
+    }));
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      kind: "jevrev.activation-decision",
+      decision: "sift",
+      shadow: true,
+    });
+  });
+
+  it("fails closed for malformed activation input", () => {
+    const result = run(["activate", "--input", "-"], "{\"kind\":\"wrong\"}");
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("Invalid activation request");
+    expect(result.stdout).toBe("");
+  });
+
   it("runs through a symlinked CLI path", () => {
     const directory = mkdtempSync(join(tmpdir(), "jevrev-cli-link-"));
     try {

@@ -1,0 +1,19 @@
+{
+  "kind": "jevrev.activation-request",
+  "schema_version": "1",
+  "task": {
+    "goal": "Make the parser at least 2x faster without changing its public API",
+    "context": "The hot path has several plausible implementations and a bounded benchmark exists."
+  },
+  "assessment": {
+    "candidate_count": 5,
+    "wrong_path_loss": 0.9,
+    "exploration_cost": 0.25,
+    "mechanism_diversity": 0.9,
+    "constraint_interaction": 0.8,
+    "uncertainty": 0.85,
+    "probeability": 0.8,
+    "reversibility": 0.2,
+    "existing_evidence": 0.1
+  }
+}

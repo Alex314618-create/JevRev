@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add the shadow-only `jevrev activation` policy to measure whether Sift is
+  worth opening, with explicit bypass decisions, reason codes, and a documented
+  host-agent assessment contract.
 - Keep linked CLI invocations working, clarify locally installed skill command
   resolution, and avoid calling a successful Loop completion "stalled".
 - Bound agent-facing output: non-interactive Long watch now emits one compact

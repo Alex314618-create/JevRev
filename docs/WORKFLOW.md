@@ -30,6 +30,12 @@ Simple or obvious tasks should bypass the workflow. It is useful only when the
 expected cost of choosing the wrong mechanism exceeds the cost of two bounded
 probes.
 
+`jevrev activation` is the current shadow check for that decision. It accepts a
+small host-agent assessment, records the deterministic loss-versus-exploration
+calculation, and emits reason codes. It does not call Jev and does not activate
+or bypass Sift automatically. The active gate remains deferred until a
+30–50-task corpus and human counterfactual review establish its error rate.
+
 ## Truth hierarchy
 
 Jev is not the final source of truth. Decision inputs are applied in this
