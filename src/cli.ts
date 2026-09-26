@@ -45,6 +45,9 @@ import { formatZodError } from "./io/validation.js";
 import { reconsiderCandidate, renderReconsiderHuman } from "./reconsider.js";
 import { evaluateActivation, renderActivationHuman, renderActivationJson } from "./activation.js";
 import { activationRequestSchema, type ActivationRequest } from "./domain/schemas.js";
+import { openTui } from "./tui/app.js";
+import { readTuiConfig } from "./tui/store.js";
+import { recordCampaignSession, recordDecisionSession, recordLongSession, recordLoopSession, recordRankSession } from "./tui/sessions.js";
 
 type Provider = "jev" | "typesafe" | "local" | "semif";
 type OutputFormat = "human" | "json";
@@ -337,16 +340,25 @@ async function evaluateRank(options: RankOptions) {
 }
 
 async function runRank(options: RankOptions): Promise<void> {
-  const { result } = await evaluateRank(options);
+  const started = performance.now();
+  const { request, result } = await evaluateRank(options);
+  await recordTuiIndex(recordRankSession(process.cwd(), request, result, Math.max(0, Math.round(performance.now() - started)), "run"));
   await emit(options.format === "json" ? renderJson(result) : `${renderHuman(result)}\n`, options.output);
 }
 
+async function recordTuiIndex(task: Promise<void>): Promise<void> {
+  try { await task; }
+  catch (error) { stderr.write(`jevrev: could not update the local TUI session index: ${error instanceof Error ? error.message : String(error)}\n`); }
+}
+
 async function runSift(options: RankOptions): Promise<void> {
+  const started = performance.now();
   if (options.summary && (options.output === undefined || options.format !== "json")) {
     throw new InputError("--summary requires --output and --format json");
   }
   const { request, result } = await evaluateRank(options);
   const campaign = buildCampaign(request, result);
+  await recordTuiIndex(recordCampaignSession(process.cwd(), campaign, Math.max(0, Math.round(performance.now() - started))));
   await emit(
     options.format === "json"
       ? renderWorkflowJson(campaign)
@@ -390,6 +402,7 @@ async function runReconsider(options: ReconsiderOptions): Promise<void> {
 }
 
 async function runDecide(options: DecideOptions): Promise<void> {
+  const started = performance.now();
   const rawCampaign = await readJson(options.campaign);
   const rawEvidence = await readJson(options.evidence);
   let campaign;
@@ -434,6 +447,7 @@ async function runDecide(options: DecideOptions): Promise<void> {
   }
 
   const result = decideCampaign(prepared, response, candidateOrder, { providerProfile });
+  await recordTuiIndex(recordDecisionSession(process.cwd(), campaign, result, Math.max(0, Math.round(performance.now() - started))));
   await emit(
     options.format === "json" ? renderWorkflowJson(result) : `${renderDecideHuman(result)}\n`,
     options.output,
@@ -646,6 +660,7 @@ async function runLoopCreate(options: LoopCreateOptions): Promise<void> {
   await validateOutputTarget(options.output);
   const spec = await readLoopSpec(options.spec);
   const loop = await createLoopCommand(options.directory, spec, options.baseRevision);
+  await recordTuiIndex(recordLoopSession(process.cwd(), loop));
   await emitLoopStatus(loop, options);
 }
 
@@ -654,6 +669,7 @@ async function runLoopNext(options: LoopNextOptions): Promise<void> {
   await validateOutputTarget(options.output);
   const plan = options.plan === undefined ? undefined : await readRoundPlan(options.plan);
   const issued = await nextLoopCommand(options.directory, plan);
+  await recordTuiIndex(recordLoopSession(process.cwd(), await loadLoop(options.directory)));
   validateFormat(options.format);
   const rendered = options.format === "json" ? `${JSON.stringify(issued.order, null, 2)}\n` : [
     `round ${issued.order.round_number}  ${issued.order.mode}`,
@@ -701,6 +717,7 @@ async function runLoopAudit(options: LoopAuditOptions): Promise<void> {
     model: options.model,
     ...(envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY") === undefined ? {} : { apiKey: envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY")! }),
   });
+  await recordTuiIndex(recordLoopSession(process.cwd(), result.loop));
   const progressLabel = result.result.material_progress
     ? "material"
     : result.result.outcome === "completed" ? "no new material change (completion verified)" : "stalled";
@@ -740,7 +757,9 @@ async function runLoopEvidenceArtifact(options: LoopEvidenceArtifactOptions): Pr
 async function runLoopMutation(options: LoopDirectoryOptions, mutation: (directory: string) => Promise<Awaited<ReturnType<typeof loadLoop>>>): Promise<void> {
   validateFormat(options.format);
   await validateOutputTarget(options.output);
-  await emitLoopStatus(await mutation(options.directory), options);
+  const loop = await mutation(options.directory);
+  await recordTuiIndex(recordLoopSession(process.cwd(), loop));
+  await emitLoopStatus(loop, options);
 }
 
 async function runLoopApprove(options: LoopApproveOptions): Promise<void> {
@@ -748,14 +767,18 @@ async function runLoopApprove(options: LoopApproveOptions): Promise<void> {
   await validateOutputTarget(options.output);
   if (!options.yes) throw new InputError("Spec approval changes the frozen contract; pass --yes to confirm the human decision");
   const spec = await readLoopSpec(options.spec);
-  await emitLoopStatus(await approveLoopSpecCommand(options.directory, spec, options.approvedBy, options.reason), options);
+  const loop = await approveLoopSpecCommand(options.directory, spec, options.approvedBy, options.reason);
+  await recordTuiIndex(recordLoopSession(process.cwd(), loop));
+  await emitLoopStatus(loop, options);
 }
 
 async function runLoopResume(options: LoopResumeOptions): Promise<void> {
   validateFormat(options.format);
   await validateOutputTarget(options.output);
   if (!options.yes) throw new InputError("Resuming a paused loop changes its human boundary; pass --yes to confirm the human decision");
-  await emitLoopStatus(await resumeLoopCommand(options.directory, options.approvedBy, options.reason), options);
+  const loop = await resumeLoopCommand(options.directory, options.approvedBy, options.reason);
+  await recordTuiIndex(recordLoopSession(process.cwd(), loop));
+  await emitLoopStatus(loop, options);
 }
 
 function addLoopCommand(program: Command): void {
@@ -873,6 +896,7 @@ function addLongCommand(program: Command): void {
     .action(async (raw: { directory: string; spec: string; format: OutputFormat }) => {
       validateFormat(raw.format);
       const store = await createLongCommand(raw.directory, await readLongSpec(raw.spec));
+      await recordTuiIndex(recordLongSession(process.cwd(), store.directory, store.spec));
       stdout.write(raw.format === "json" ? `${JSON.stringify(store.snapshot, null, 2)}\n` : `created ${store.spec.session_id}\n`);
     });
   long.command("ingest").description("Normalize and append one bounded JSONL event batch")
@@ -882,6 +906,7 @@ function addLongCommand(program: Command): void {
     .action(async (raw: { directory: string; input: string; format: OutputFormat }) => {
       validateFormat(raw.format);
       const result = await ingestLongJsonlCommand(raw.directory, raw.input);
+      await recordTuiIndex(recordLongSession(process.cwd(), raw.directory));
       stdout.write(raw.format === "json"
         ? `${JSON.stringify({ accepted: result.accepted.length, duplicates: result.duplicate_event_ids.length, snapshot: result.snapshot }, null, 2)}\n`
         : `accepted ${result.accepted.length}, duplicates ${result.duplicate_event_ids.length}\n`);
@@ -907,6 +932,7 @@ function addLongCommand(program: Command): void {
     .action(async (raw: LongFormatOptions) => {
       validateFormat(raw.format);
       const result = await longStatusCommand(raw.directory);
+      await recordTuiIndex(recordLongSession(process.cwd(), raw.directory));
       stdout.write(raw.format === "json"
         ? `${JSON.stringify({ snapshot: result.store.snapshot, signals: result.signals, alerts: result.policy.alerts }, null, 2)}\n`
         : renderLongHuman(result));
@@ -932,7 +958,25 @@ function addLongCommand(program: Command): void {
         stream: raw.stream,
         full: raw.full,
       });
-    });
+  });
+}
+
+async function autoOpenTui(actionCommand: Command, rootCommand: Command): Promise<void> {
+  if (env.JEVREV_NO_TUI === "1" || rootCommand.opts<{ tui?: boolean }>().tui === false) return;
+  if (input.isTTY !== true || stdout.isTTY !== true) return;
+  const name = actionCommand.name();
+  const parent = actionCommand.parent?.name();
+  const componentCommand = ["run", "rank", "sift", "decide"].includes(name)
+    || (parent === "loop" && name === "create")
+    || (parent === "long" && name === "create");
+  if (!componentCommand) return;
+  const config = await readTuiConfig(process.cwd());
+  if (!config.auto_open_on_component) return;
+  try {
+    await openTui(process.cwd(), { initialScreen: "kanban", intervalMs: config.refresh_ms });
+  } catch (error) {
+    stderr.write(`jevrev: the project TUI could not open; command output is still valid: ${error instanceof Error ? error.message : String(error)}\n`);
+  }
 }
 
 function createProgram(): Command {
@@ -940,8 +984,19 @@ function createProgram(): Command {
     .name("jevrev")
     .description("Explore candidate approaches, prune them with Jev, and return the few worth executing")
     .version(VERSION)
+    .option("--no-tui", "do not open the project TUI after this command")
     .exitOverride()
     .showHelpAfterError();
+
+  program.action(async () => {
+    if (input.isTTY !== true || stdout.isTTY !== true) {
+      stderr.write("jevrev: an interactive terminal is required; use a JevRev component command for machine-readable output.\n");
+      commandExitCode = 2;
+      return;
+    }
+    await openTui(process.cwd());
+  });
+  program.hook("postAction", async (rootCommand, actionCommand) => autoOpenTui(actionCommand, rootCommand));
 
   addRankCommand(program, "run");
   addRankCommand(program, "rank");

@@ -4,6 +4,8 @@ import { dashboardFromStatus, longEventSummary, renderLongDashboard, renderLongT
 import type { LongAlert } from "./schemas.js";
 import type { LongNotifier } from "./notifier.js";
 import { longStatusCommand } from "./commands.js";
+import { loadLongStore } from "./store.js";
+import { openTui } from "../tui/app.js";
 
 type TuiInput = NodeJS.ReadableStream & { isTTY?: boolean; setRawMode?: (mode: boolean) => void };
 interface TuiOutput extends NodeJS.WritableStream { isTTY?: boolean; columns?: number; rows?: number; }
@@ -74,6 +76,16 @@ async function runInteractiveLongWatch(directory: string, options: LongWatchOpti
 
 export async function watchLong(directory: string, options: LongWatchOptions = {}): Promise<void> {
   const input = options.input ?? process.stdin as unknown as TuiInput; const output = options.output ?? process.stdout as unknown as TuiOutput; const shouldUseInteractive = options.interactive ?? (!options.stream && options.iterations === undefined && options.clear !== false && input.isTTY === true && output.isTTY === true);
+  const hasCustomTerminal = options.input !== undefined || options.output !== undefined;
+  if (shouldUseInteractive && !hasCustomTerminal) {
+    const store = await loadLongStore(directory);
+    await openTui(options.root ?? process.cwd(), {
+      initialScreen: "kanban",
+      initialSessionId: store.spec.session_id,
+      ...(options.intervalMs === undefined ? {} : { intervalMs: options.intervalMs }),
+    });
+    return;
+  }
   if (shouldUseInteractive) { await runInteractiveLongWatch(directory, options); return; }
   const intervalMs = options.intervalMs ?? 10_000; if (!Number.isInteger(intervalMs) || intervalMs < 100) throw new Error("Long watch interval must be at least 100ms"); const sleep = options.sleep ?? ((milliseconds: number) => new Promise<void>((resolvePromise) => setTimeout(resolvePromise, milliseconds))); const onFrame = options.onFrame ?? ((frame: string) => output.write(frame)); const notifier = options.notifier; const iterations = options.iterations ?? (options.stream ? Infinity : 1); let previousAlertIds = new Set<string>(); let previousAlerts: LongAlert[] = []; let previousFrame: string | undefined;
   for (let iteration = 0; iteration < iterations; iteration += 1) { const status = await longStatusCommand(directory, options.now?.() ?? new Date(), previousAlerts); const dashboard = dashboardFromStatus(status); const newAlerts = status.policy.raised.filter((alert) => !previousAlertIds.has(alert.id)); previousAlertIds = new Set(status.policy.alerts.filter((alert) => alert.status === "open" || alert.status === "acknowledged").map((alert) => alert.id)); previousAlerts = [...status.policy.alerts]; if (notifier !== undefined) await notifier.notify(newAlerts); const frame = options.full ? renderLongDashboard(dashboard, { ...(options.width === undefined ? {} : { width: options.width }), ...(options.color === undefined ? {} : { color: options.color }), timeline: status.store.events.slice(-5).map((event) => `${event.payload.received_at}  ${event.payload.event_type}`) }) : renderLongWatchSummary(dashboard); if (frame !== previousFrame) await onFrame(options.full && options.clear !== false ? `\x1b[2J\x1b[H${frame}` : frame); previousFrame = frame; if (iteration + 1 < iterations) await sleep(intervalMs); }

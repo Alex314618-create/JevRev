@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Restore the integrated project cockpit: component commands record local
+  Sessions/Kanban summaries and open the three-page TUI only in interactive
+  terminals, with `jevrev` reopen, `--no-tui`, and `JEVREV_NO_TUI` controls.
 - Harden package and README entry points: include README assets and contributor
   docs in the tarball, document local `npx` and packaged skill commands, and
   verify a clean consumer install.

@@ -32,6 +32,7 @@
     "docs/ACTIVATION.md",
     "docs/INSTALL.md",
     "docs/INSTALL.zh-CN.md",
+    "docs/TUI_DESIGN.md",
     "docs/JEVLOOP_DESIGN.md",
     "docs/JEVLONG_DESIGN.md",
     "docs/AUTHORITY.md",

@@ -37,10 +37,16 @@ jevrev long watch    --directory .jevrev/long --interval-ms 1000
 ```
 
 The target directory must be new; missing parent directories are created.
-`watch` is the live terminal cockpit. In a non-interactive shell it emits one
-compact status by default; `--stream` opts into repeated background samples and
-`--iterations N` bounds a scripted run. Scripts that need the full structured
-snapshot should use `long status --format json`.
+`watch` is the human entry point. In a real interactive terminal it opens the
+project cockpit and selects this Long session. In a non-interactive shell it
+emits one compact status by default; `--stream` opts into repeated background
+samples and `--iterations N` bounds a scripted run. Scripts that need the full
+structured snapshot should use `long status --format json`.
+
+The project cockpit is a viewer and project preference editor. It does not
+start, retry, steer, edit, or terminate the observed agent. A caller that
+injects its own terminal streams may still use the Long-specific renderer from
+the library API for tests or an embedding host.
 
 `ingest` accepts normalized events. Adapters for Codex, Claude Code, CI, or a
 custom harness convert their native logs into that contract. The observer is

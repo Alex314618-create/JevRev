@@ -26,6 +26,15 @@ JevRev has three product components and a shared evidence protocol:
 - **JevLong**: `jevrev long`. It observes a long-running session from JSONL
   events, reports stalls, failure loops, drift, and budget risk, and leaves
   intervention to a human. It is not a daemon and does not drive the agent.
+- The project cockpit has Sessions, Kanban, and Config pages. In a real
+  interactive terminal, a successful `sift`, `run`, `rank`, `decide`, `loop
+  create`, or `long create` opens it after the command output. `jevrev` with no
+  subcommand reopens the last page/session. Use `jevrev --no-tui <component> ...`
+  or `JEVREV_NO_TUI=1` when the terminal must remain machine-only. Pipes, CI,
+  and non-interactive agent calls never enter the TUI. Toggle the project
+  preference from Config; its source of truth is `.jevrev/ui/config.json`.
+  When a host is running from an interactive terminal but needs a clean JSON
+  stream, add the root `--no-tui` flag before the component command.
 
 `Probe`, `Evidence`, and `Decide` are shared workflow concepts and judge
 boundaries. They are how the host agent performs work, records facts, and lets
