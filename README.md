@@ -1,10 +1,10 @@
 # JevRev
 
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRev wordmark with skull illustration" width="620" />
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev wordmark and illustration" width="620" />
 </p>
 
-<p align="center"><strong>The decision layer beside your LLM.</strong></p>
+<p align="center"><strong>An alloy spine for your LLM, built with Jev.</strong></p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a>
@@ -12,292 +12,338 @@
 
 <p align="center">
   <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square&amp;color=555555&amp;labelColor=333333" /></a>
-  <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-555555?style=flat-square&amp;labelColor=333333" /></a>
+  <a href="package.json"><img alt="Requires Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-555555?style=flat-square&amp;labelColor=333333" /></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
-> Shortlist the options. Score in a loop. Watch the run.
+JevRev is an LLM + Jev system. Evolution gave animals a spine so they could make many decisions quickly and cheaply. JevRev applies the same split to a workflow: the LLM brings depth and range, while Jev brings very fast, low-cost decisions. Together they make the workflow more efficient.
 
-Your LLM can imagine, write, test, and revise. It should not have to make every
-cheap routing decision by itself.
+The tool has three parts: **JevSift**, **JevLoop**, and **JevLong**.
 
-JevRev puts Jev beside the LLM: a semantic layer that filters
-plans, checks progress, and keeps attention on the work worth continuing. The
-LLM supplies breadth and implementation power. JevRev supplies the second look
-before more time and tokens are spent.
+At the start of a task, it lets the LLM spread out like an octopus. Each arm can reach for a different path, and weak or disappointing paths get cut away. That is **JevSift**. **JevLoop** audits and scores each round of work, then uses the result to decide what the agent should do next. Jev makes the workflow faster and cheaper, and the final result can be far better. We include concrete cases below. **JevLong** watches long, multi-round tasks for stalls, repeated failures, drift, tool-call problems, and budget risk.
 
-That is JevRev: not another coding agent, but the decision system around one.
+Jev stays on the sidelines. It makes decisions, filters paths, and raises reminders. The LLM proposes and executes the work. JevRev communicates through a CLI and JSON protocol and leaves the session in the host agent's hands.
 
-## See the idea
+## See it in action
 
-The included case asks for a faster CSV parser. The LLM proposes a tempting
-regex shortcut and a more careful state machine. The shortcut wins the paper
-ranking, then fails the correctness check. The state machine is slower, passes
-the same checks, and becomes the evidence winner.
+Here are a few examples that show what JevRev changes in practice.
 
-<picture>
-  <source media="(max-width: 600px)" srcset=".github/assets/jevrev-decision-gate-mobile.svg">
-  <img src=".github/assets/jevrev-decision-gate.svg" alt="The paper favorite regex shortcut fails required correctness; the second-ranked state machine passes and wins after both receive the same probes.">
-</picture>
+### 1. Tidal City (start here)
 
-Run the complete case:
+<details>
+<summary>Open the case: building TidalCity</summary>
 
-```bash
-git clone https://github.com/Alex314618-create/JevRev.git
-cd JevRev
-npm ci
-npm run build
-npm run demo:workflow
-```
+The same model, ChatGPT-6-Sol-Ultra, ran the same prompt to build TidalCity, a city simulation that floods with the tide. Here is the benchmark version without Jev's involvement:
 
-The Jev answers are replayed for a deterministic demo. The implementations,
-correctness checks, benchmark samples, output digests, and final decision are
-real:
+<p align="center">
+  <img src=".github/assets/tidal-city/benchmark-01.jpg" alt="Tidal City benchmark 1" width="49%" />
+  <img src=".github/assets/tidal-city/benchmark-02.jpg" alt="Tidal City benchmark 2" width="49%" />
+</p>
 
-```text
-Paper favorite: regex-shortcut
-  correctness command: failed
-  result: rejected
+It has a few simple buildings, roads, and a basic rising-water simulation. The model is rough, the controls are limited, and the roads and buildings are placed as disconnected pieces without much structure.
 
-Evidence winner: indexed-state-machine
-  correctness command: passed
-Decision: winner -> integrate_winner
-```
+Here is the result built with JevRev, including JevSift, JevLoop, and JevLong:
 
-Inspect the [executed probe](benchmarks/workflow-fixture/probe.mjs),
-[demo driver](scripts/run-workflow-demo.mjs), and the
-[decision tests](https://github.com/Alex314618-create/JevRev/blob/main/tests/workflow-decide.test.ts).
-The measured throughput varies by machine; the required correctness failure is
-what reverses the ranking.
+<p align="center">
+  <img src=".github/assets/tidal-city/jevrev-01.jpg" alt="Tidal City with JevRev 1" width="100%" />
+</p>
+<p align="center">
+  <img src=".github/assets/tidal-city/jevrev-02.jpg" alt="Tidal City with JevRev 2" width="49%" />
+  <img src=".github/assets/tidal-city/jevrev-03.jpg" alt="Tidal City with JevRev 3" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/assets/tidal-city/jevrev-04.jpg" alt="Tidal City with JevRev 4" width="49%" />
+  <img src=".github/assets/tidal-city/jevrev-05.jpg" alt="Tidal City with JevRev 5" width="49%" />
+</p>
 
-For a longer, zero-context run against a real JSONL ingestion problem, see the
-[recorded case](benchmarks/real-jsonl-ingestion/README.md). It includes the
-actual failed shortcut, the evidence that rejected it, three Loop rounds, and
-the Long observer output.
+The city is larger and the environment is much more fully built out. It has distinct districts, and almost every building has its own name. You can change the time of day, switch camera views, and use WASD to walk through the city or swim through the water.
+</details>
 
-## The three parts
+### 2. JSONL event ingestion
+
+<details>
+
+<summary>Open the case: processing 25,000 JSONL events</summary>
+
+The task was to make a pure Node 20 JSONL ingester handle 25,000 production-shaped events while meeting four requirements:
+
+- isolate malformed lines;
+- preserve first-seen order;
+- emit each duplicate event only once;
+- reach at least twice a conservative baseline throughput.
+
+The input was about 2.3 MB, with 184 malformed/schema-invalid lines and 258 duplicate IDs.
+
+**What JevSift did:**
+
+Six approaches entered the sift. JevSift kept two strict survivors and sent one more to review:
+
+| Approach | Sift score | Result |
+| --- | ---: | --- |
+| `batch-index` | 0.9243 | kept, sent to a real probe |
+| `regex-shortcut` | 0.9240 | kept, sent to a real probe |
+| `state-scan` | 0.7965 | cut off by the budget |
+| `baseline-parse` | 0.6100 | rejected, low execution value |
+| `worker-shards` | 0.6043 | review, not treated as approved |
+| `external-index` | 0.4931 | rejected, low execution value |
+
+Both survivors ran a correctness check and seven benchmark runs:
+
+| Metric | `regex-shortcut` | `batch-index` |
+| --- | ---: | ---: |
+| Correctness | failed, expected 184 / actual 65 | passed |
+| Mean throughput (events/s) | 180,530.90 | 180,317.21 |
+| Sample standard deviation (n-1) | 8,567.37 | 10,486.05 |
+| Decide | rejected | `winner` |
+
+A one-shot workflow would pick regex. It is fast on paper, but it misses most malformed lines. JevRev chose `batch-index` because it met the task contract.
+
+**What JevLoop did:**
+
+1. Round 1: throughput passed, correctness failed; returned `fix_regression`.
+2. Round 2: fresh correctness and maintenance evidence passed; returned `verify`.
+3. Round 3: all criteria and the protected surface were submitted again on the same head; returned `completed`.
+
+Final state: `completed`, round 3, with 838 ms wall-clock time and 1,628 tokens in replay provider accounting.
+
+**What JevLong did:**
+
+- accepted 13 events on the first import; accepted 0 on the duplicate import and identified 13 duplicates;
+- ran `long status`, a multi-frame `long watch`, and `long loop-audit`;
+- ended at sequence 14;
+- reported a high-severity `failure_loop` alert and a critical `protocol` alert;
+- The Loop reached `completed` while Long's `progress_index` remained 0.
+
+</details>
+
+## The three parts in detail
 
 <picture>
   <source media="(max-width: 600px)" srcset=".github/assets/jevrev-product-roles-mobile.svg">
-  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift selects paths, JevLoop audits one artifact, and read-only JevLong watches the session. Probe, Evidence, and Decide are shared workflow boundaries; Sift and Loop keep separate state machines.">
+  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift chooses paths, JevLoop reviews one result, JevLong watches a long-running session" />
 </picture>
 
-### JevSift: choose the work
+### JevSift: decide what to try first
 
-The host LLM proposes a few materially different approaches. JevSift removes
-weak, duplicate, risky, or low-value paths before they consume implementation
-budget, then emits bounded work orders for the survivors.
+The LLM writes several genuinely different proposal cards. JevSift uses Jev for narrow questions, then deterministic policy handles duplicates and hard-constraint risk and creates probe work orders with budgets and stop conditions for the candidates that remain.
 
-When it is unclear whether a task deserves a Sift campaign, use the cheap
-shadow check first:
+Sift answers one question: which directions deserve your token budget? The host agent still writes the code, runs the tests, and runs the benchmark.
+
+If it is unclear whether a task deserves a Sift round, start with shadow activation:
 
 ```bash
 jevrev activation --input activation.json --format json
 ```
 
-It compares the estimated cost of a wrong mechanism with the cost of a few
-bounded probes and returns reason codes. It never calls Jev or changes the
-workflow automatically; the host agent still decides whether to run Sift.
+It compares the expected cost of taking a wrong path with the cost of a few bounded probes and returns stable reason codes. It currently runs in shadow mode: it does not call Jev and does not start or skip Sift for you. See the [activation policy](docs/ACTIVATION.md) for the fields and the follow-up evaluation plan.
 
-### JevLoop: improve one artifact
+### JevLoop: let each round converge on evidence
 
-The host agent executes a bounded work order, records what actually happened,
-and submits the round to JevLoop. Loop checks the evidence, asks Jev only the
-narrow questions that facts cannot settle, and returns the next action: continue,
-fix, verify, replan, wait for a human, or finish when every criterion is proven.
+The agent moves the work forward each round. JevLoop checks the result, reading the commands, tests, metrics, and artifacts recorded by the recorder. It confirms the facts first, then asks Jev what the result still needs. The next action can be `fix`, `verify`, `continue`, `replan`, or `human`, and the loop stops when the goal is actually met.
 
-This is where `Probe`, `Evidence`, and `Decide` belong in the product story:
-they are Loop's working machinery, not another product surface.
+Loop follows one result. The agent acts, Loop reviews, and Jev decides. It does not take over the session or rubber-stamp a result that merely looks good. Every completion must be backed by replayable evidence.
 
-### JevLong: watch the session
+### JevLong: keep long-running sessions visible and auditable
 
-JevLong observes a long-running agent session and reports stalls, repeated
-failures, drift, tool-call problems, budget risk, and progress to a human. It
-does not silently steer, retry, edit, or kill the agent.
-
-`long watch` is the live terminal cockpit. In a non-interactive shell it emits
-one compact status by default; use `--stream` for continuous background sampling
-or `--iterations N` for a fixed sample count. Use `long status --format json`
-when another tool needs the full snapshot.
-
-The result is a simple split: the LLM does the expensive creative work, while
-JevRev prevents the workflow from repeatedly paying for bad directions.
-
-## Install the CLI and agent skill
-
-The CLI and skill installer work on Windows, macOS, and Linux. The repository
-is not currently published to the npm registry, so install from the source
-checkout. Follow the [installation guide](docs/INSTALL.md) for shell-specific
-setup, global command linking, provider configuration, and agent skill paths.
-
-After cloning and building, choose the target for your agent:
+Long keeps reading the JSONL events written by the agent, records session progress, and detects stalls, repeated failures, drift, tool problems, and budget risk. It reports what happened, whether the session is still moving, and where attention is needed.
 
 ```bash
-node scripts/install-skill.mjs --target codex   # Codex
-node scripts/install-skill.mjs --target claude  # Claude Code
-node scripts/install-skill.mjs --target opencode # OpenCode
-node scripts/install-skill.mjs --target agents   # other Agent Skills hosts
+jevrev long watch --directory .jevrev/long
+jevrev long status --directory .jevrev/long --format json
 ```
 
-Installing the skill does not put `jevrev` on PATH. Confirm
-`jevrev --version` before use. In a project with a local JevRev dependency,
-use `npx --no-install jevrev --version` and prefix the skill's commands with
-`npx --no-install` when the bare command is unavailable.
+## Quick start: connect any Agent
 
-After `npm link`, the skill installer is also available as
-`jevrev-skill-install --target <codex|claude|opencode|agents>`. From a source
-checkout, `node scripts/install-skill.mjs` is the equivalent command.
-If your host caches skills, restart it or reload its skill list after
-installation.
+JevRev connects to external agents through its CLI and JSON/JSONL contracts. Codex, Claude Code, OpenCode, CI workflows, and custom harnesses can all use the same protocol. Hosts with skill support can load the instructions; other hosts can call the CLI directly.
 
-Then give the host agent this instruction:
+### Install
+
+```bash
+npm install
+npm run build
+node scripts/install-skill.mjs --target <codex|claude|agents|dsh>
+```
+
+Choose one `target` for the host you use. OpenCode and other custom hosts can use `--destination <host-skill-directory>`.
+
+Prompt example:
 
 ```text
-Use JevRev for this task. Propose materially different approaches, ask JevRev
-to sift them, run only the bounded probes, record the evidence, and let JevRev
-audit the next round before continuing.
+Use JevRev: complete this task with Sift, execute only selected approaches, record the evidence, run each round through Loop, and connect Long for long-running work.
 ```
 
-## The interaction layer
+Run the full example now:
 
-JevRev is a command-line protocol that the host LLM calls at decision points.
-You stay in Codex, Claude Code, or another agent; JevRev does not replace that
-agent and does not need to run a second conversation beside it.
+```bash
+npm run demo:workflow
+```
 
-The exchange is deliberately plain:
+## TUI: the human cockpit
+
+The CLI gives the agent commands and a JSON protocol. The TUI gives a human a live view of every workflow in the project.
+
+Running `jevrev` directly opens the cockpit. In an interactive terminal, these commands also open it after they complete successfully and focus the workflow just activated:
 
 ```text
-host agent writes proposals.json
-        -> jevrev sift        -> bounded work orders
-host agent implements and tests a survivor
-        -> evidence run/metric/artifact -> evidence.json
-        -> jevrev decide or loop audit -> next action
-host adapter sends session JSONL
-        -> jevrev long ingest/watch -> status and alerts for a human
+jevrev run
+jevrev rank
+jevrev sift
+jevrev decide
+jevrev loop create
+jevrev long create
 ```
 
-The input and output are JSON, so an agent can call JevRev as a normal tool,
-save every decision, and resume after an interruption. Human control stays at
-the meaningful boundaries: define or change the contract, choose a provider,
-approve a resume, abort a loop, and decide whether a reported winner is
-integrated. JevRev can reject an incomplete or failed path and return
-`continue`, `fix_regression`, `verify`, `replan`, `waiting_human`, or
-`completed`; it cannot edit the repository, start or stop the host agent, merge
-a branch, or silently continue in the background.
+The flow looks like this:
 
-That is the practical role of the interaction layer: it turns an LLM's free
-form reasoning into inspectable work orders, recorded facts, and typed next
-actions without taking the work away from the LLM or the final decision away
-from the user.
-
-## The command surface
-
-| Command | Role in the LLM + Jev workflow |
-| --- | --- |
-| `jevrev activation` | Decide whether a Sift campaign is worth opening (shadow-only) |
-| `jevrev sift` | Decide which proposed approaches deserve a probe |
-| `jevrev loop` | Audit one artifact after each agent round |
-| `jevrev long` | Observe the health of a long-running session |
-
-`jevrev evidence` and `jevrev decide` are lower-level infrastructure commands.
-They record and adjudicate the facts that JevSift and JevLoop consume; they are
-not a fourth and fifth product component.
-
-From source, use `node dist/cli.js` in place of `jevrev`:
-
-```bash
-node dist/cli.js sift --input examples/parser-speedup.json --replay examples/parser-jev-response.json
+```text
+Agent calls JevRev
+        ↓
+The component writes results, events, or audit records
+        ↓
+JevRev updates the local session summary
+        ↓
+The TUI opens and keeps refreshing
+        ↓
+The human sees progress, evidence, and risk
 ```
 
-For an agent handoff, keep the complete campaign on disk and return only a
-short navigation summary:
+`loop next`, `loop audit`, `long ingest`, and `long status` update the session state without repeatedly taking over the terminal. Interactive `long watch` opens the cockpit.
 
-```bash
-node dist/cli.js sift --input examples/parser-speedup.json \
-  --replay examples/parser-jev-response.json --format json \
-  --output campaign.json --summary
+The TUI has three pages:
+
+### Sessions
+
+Shows the Sift, Loop, and Long sessions in the project.
+
+Each session includes:
+
+- task name and goal;
+- current component and run state;
+- how long the session has been running;
+- the latest status summary;
+- recorded agent work time;
+- counts for in-progress, attention-needed, and verified items.
+
+When agent work time cannot be collected reliably, the interface shows `not recorded`.
+
+### Kanban
+
+The current session is arranged in three areas:
+
+```text
+In Progress       work underway
+Needs Attention   needs a human look
+Verified          backed by trusted evidence
 ```
 
-## Providers
+Each component writes its own information:
 
-JevRev keeps the decision boundary the same whether Jev is hosted, local, or
-replayed:
+- **Sift**: kept candidates, review candidates, rejected paths, and pending probe work orders;
+- **Loop**: current round, run state, total tokens, total work time, consecutive stalled rounds, latest audit result, and the reason for the next action;
+- **Long**: event count, tool calls, provider tokens, pending milestones, passed milestones, and open alerts.
 
-Hosted Jev in a POSIX shell:
+Candidates selected by Sift stay in `In Progress`. A recommended winner stays out of `Verified` until it is integrated and backed by evidence.
+
+Long's stall, failure, drift, and budget risks appear as open alerts in `Needs Attention`.
+
+### Config
+
+Configure the TUI for the current project:
+
+- whether a JevRev component opens the TUI when it finishes;
+- the refresh interval;
+- terminal colors.
+
+Configuration is stored at:
+
+```text
+.jevrev/ui/config.json
+```
+
+Use `jevrev --no-tui <component> ...` to suppress the automatic open for one command, or set:
+
+```text
+JEVREV_NO_TUI=1
+```
+
+This only disables the automatic open. Components continue to record the session.
+
+Common controls:
+
+```text
+Left / Right  switch between Sessions, Kanban, and Config
+Up / Down     select a session or setting
+Enter         open the selected session's Kanban
+c             jump to Config
+Space         toggle the selected boolean setting
++ / -         adjust the refresh interval
+s             save the configuration
+q / Ctrl-C    exit and restore the terminal
+```
+
+The TUI handles observation, navigation, and project settings. Resume, pause, approve, stop, and integrate actions still use explicit CLI commands.
+
+`.jevrev/ui/` stores the session summaries used for display. Sift campaigns, Loop hash-chain logs, and Long event logs keep the full facts and remain the source for decisions.
+
+Without an interactive terminal, JevRev keeps the normal human/JSON output and sends no TUI control characters. Running `jevrev` without an interactive terminal reports that condition directly.
+
+## Connect Jev or a local model
+
+Sift, Decide, and Loop audit use the same provider interface. You can connect to hosted Jev, local SemIf, or a replay file for offline runs. Keep credentials in environment variables; do not put them in command arguments, campaign files, or evidence.
+
+### Hosted Jev
+
+macOS / Linux:
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-node dist/cli.js sift --input examples/parser-speedup.json --provider jev \
-  --output campaign.json --summary
+
+node dist/cli.js sift \
+  --input examples/parser-speedup.json \
+  --provider jev \
+  --output campaign.json
 ```
 
-Local SemIf through llama.cpp on Windows:
+Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-node dist/cli.js sift --input examples/parser-speedup.json --provider semif \
-  --output campaign.json --summary
+$env:JEVREV_JEV_API_KEY = "..."
+
+node dist/cli.js sift `
+  --input examples/parser-speedup.json `
+  --provider jev `
+  --output campaign.json
 ```
 
-Replay fixtures work without a network or API key. See
-[`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) for the local model setup.
+For a custom Jev API address, set `JEVREV_JEV_URL` or pass
+`--jev-url <api-root>`. The CLI sends requests to `/v1/systemone` on that address.
 
-## One brief, two outcomes
+### Local SemIf
 
-JevRev is useful beyond code paths. The repository includes two pages made from
-the same brief: a conventional first pass and a JevRev-routed evidence dossier.
+Windows:
 
-<table>
-  <tr>
-    <th width="50%">First pass</th>
-    <th width="50%">JevRev route</th>
-  </tr>
-  <tr>
-    <td><img src=".github/assets/one-shot-showcase/direct-hero.png" alt="Conventional first-pass page" /></td>
-    <td><img src=".github/assets/one-shot-showcase/routed-hero.png" alt="JevRev-routed evidence dossier" /></td>
-  </tr>
-</table>
+```powershell
+powershell -ExecutionPolicy Bypass `
+  -File scripts/start-semif.ps1 -Background
 
-The point is not a magic visual score. It is that the route chosen by Jev can
-change the artifact's structure, evidence, and final direction together.
-See the [source pages](benchmarks/one-shot-showcase/README.md) and their
-[validation record](benchmarks/one-shot-showcase/VALIDATION.md) before comparing
-the screenshots.
+node dist/cli.js sift `
+  --input examples/parser-speedup.json `
+  --provider semif `
+  --output campaign.json
+```
 
-## Read next
+See [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) for starting, checking, and stopping the local model.
 
-- [Install and use JevRev](docs/INSTALL.md) · [简体中文安装指南](docs/INSTALL.zh-CN.md)
-- [Workflow guide](docs/WORKFLOW.md)
-- [Sift activation policy](docs/ACTIVATION.md)
+## Docs
+
+- [Workflow](docs/WORKFLOW.md)
+- [Activation policy](docs/ACTIVATION.md)
 - [Protocol and JSON contracts](docs/PROTOCOL.md)
 - [Authority model](docs/AUTHORITY.md)
 - [JevLoop design](docs/JEVLOOP_DESIGN.md)
 - [JevLong design](docs/JEVLONG_DESIGN.md)
 - [Acceptance record](docs/ACCEPTANCE.md)
 
-## Development
-
-```bash
-npm ci
-npm run check
-npm test
-npm run build
-npm run demo:all
-npm run demo:workflow
-npm run demo:loop
-npm run demo:engineering
-```
-
-Node.js 20 or newer is required. JevRev is MIT licensed.
-
-## Contributing
-
-The most useful contribution is a recorded decision case: a real task you ran
-through JevRev, the route it picked, and the evidence behind it. Negative results
-count, and so does a task where Sift was correctly skipped.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the contribution surface, the setup
-steps, and the claims this project cannot make. Contributors are listed in
-[`AUTHORS.md`](AUTHORS.md).
+JevRev is released under the MIT license.
 
 [MIT](LICENSE)
