@@ -56,7 +56,7 @@ before you touch anything in the decision path.
 ```bash
 git clone https://github.com/Alex314618-create/JevRev.git
 cd JevRev
-npm install
+npm ci
 npm run build
 npm run demo:workflow
 ```

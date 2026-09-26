@@ -6,7 +6,8 @@ Tagline: **Explore wide. Prove cheap. Commit once.**
 
 The checks below are the acceptance record for this package. Commands were run
 from the repository root on Node.js 25.2.1 / Windows PowerShell; the package
-requires Node.js 20 or newer.
+requires Node.js 20 or newer. The CI workflow repeats the TypeScript, test,
+build, link, and demo checks on Node.js 20 for Ubuntu, macOS, and Windows.
 
 ## Module checklist
 
@@ -27,20 +28,25 @@ requires Node.js 20 or newer.
 | Replay safety | Candidate-order metadata checked before positional answers are accepted | PASS |
 | CLI | `run`/`rank` compatibility, `sift`, `decide`, stdin, file output, stable exit codes | PASS |
 | Evaluation/skill tooling | Read-only case evaluator and explicit skill installer | PASS |
+| Cross-platform entry | Source checkout, local `npx`, linked CLI, four skill targets, and clean consumer tarball install | PASS |
 | Operations | `doctor`, local health probes, PowerShell model lifecycle scripts | PASS |
 | JevLoop contracts | frozen spec, one active round, scope/budget gates, fresh completion evidence | PASS |
 | JevLoop store | hash-chained events, lock recovery, replay, resume/abort/approval | PASS |
 | JevLoop CLI | create, evidence template, next, audit, status, resume, abort, approve | PASS |
 | Documentation | README, protocol, design, local setup, skill, release notes | PASS |
-| Packaging | `npm pack --dry-run`, compiled CLI, examples, docs, scripts, no generated benchmark results | PASS |
+| Packaging | `npm pack --dry-run`, clean consumer CLI/skill smoke test, compiled CLI, examples, docs, scripts, no generated benchmark results | PASS |
 
 ## Automated tests
 
 ```text
 npm run check     PASS
-npm test          PASS — 195 tests
+npm test          PASS — 307 tests
 npm run build     PASS
 ```
+
+The packed `jevrev-0.2.0.tgz` was installed in a fresh temporary consumer
+directory with scripts disabled. Its `jevrev --version`, `jevrev doctor`, and
+`jevrev-skill-install --target agents --dry-run` commands all passed.
 
 The tests cover JevSift/Probe/Decide plus JevLoop schema rejection, scope and
 budget gates, question construction, official-client

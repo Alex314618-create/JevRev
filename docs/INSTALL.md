@@ -45,6 +45,10 @@ usually the prefix's `bin` directory.
 You can skip the global link and run the CLI from the checkout with
 `node dist/cli.js` instead.
 
+After `npm ci`, `npx --no-install jevrev --version` also resolves the local
+package without downloading anything. Use the same `npx --no-install jevrev`
+prefix for commands when you do not want a global link.
+
 ## Try a workflow without an API key
 
 From the repository checkout:
@@ -108,6 +112,14 @@ node scripts/install-skill.mjs --target opencode
 node scripts/install-skill.mjs --target agents
 ```
 
+After `npm link` (or an installed package), the equivalent binary is:
+
+```text
+jevrev-skill-install --target codex
+```
+
+Replace `codex` with `claude`, `opencode`, or `agents` as needed.
+
 The `opencode` target installs under `~/.config/opencode/skills/jevrev`.
 The `agents` target installs under `~/.agents/skills/jevrev`, which OpenCode
 and other Agent Skills-compatible hosts can discover. To install into a
@@ -121,7 +133,10 @@ node scripts/install-skill.mjs --destination .claude/skills/jevrev
 
 Use the same commands in PowerShell, Bash, and Zsh. The installer uses the
 current user's home directory for global targets and accepts native Windows
-or POSIX destination paths.
+or POSIX destination paths. The `codex` target honors `CODEX_HOME` when that
+environment variable is set. Existing different `SKILL.md` files are refused
+unless `--force` is supplied; after installing, restart the host or reload its
+skill list if it caches skills.
 
 ## Local models
 
@@ -137,4 +152,5 @@ SemIf endpoint yourself and pass its address with `--semif-url`; see
 - `jevrev` is not found after `npm link`: verify the global npm executable directory is on `PATH`, or use `node dist/cli.js` from the checkout.
 - `Missing Jev API key`: set `JEVREV_JEV_API_KEY`, or use `--replay` / `--provider semif`.
 - A skill is visible but commands fail: skill installation and CLI installation are separate; run `jevrev --version` in that host's shell.
+- Skill installation refuses an existing file: inspect it first, then pass `--force` only when replacing it is intentional.
 - Local SemIf cannot connect: confirm the endpoint is listening on loopback or the configured `--semif-url`, then run `jevrev doctor --provider semif --check`.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Harden package and README entry points: include README assets and contributor
+  docs in the tarball, document local `npx` and packaged skill commands, and
+  verify a clean consumer install.
 - Document source-based installation, CLI linking, provider setup, and agent
   skill installation on Windows, macOS, and Linux; add an OS-matrix CI check.
 - Add the shadow-only `jevrev activation` policy to measure whether Sift is

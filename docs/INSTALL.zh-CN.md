@@ -41,6 +41,10 @@ jevrev --version
 
 也可以不建全局链接，直接在仓库中使用 `node dist/cli.js`。
 
+执行 `npm ci` 后，也可以用 `npx --no-install jevrev --version` 解析当前项目，
+它不会下载新包。没有全局链接时，把命令里的 `jevrev` 替换为
+`npx --no-install jevrev` 即可。
+
 ## 不用 API key 先跑一遍
 
 在仓库目录中运行：
@@ -103,6 +107,14 @@ node scripts/install-skill.mjs --target opencode
 node scripts/install-skill.mjs --target agents
 ```
 
+执行 `npm link`（或安装了 npm 包）后，也可以使用对应的全局命令：
+
+```text
+jevrev-skill-install --target codex
+```
+
+把 `codex` 换成 `claude`、`opencode` 或 `agents` 即可。
+
 `opencode` 会安装到 `~/.config/opencode/skills/jevrev`。`agents` 会安装到
 `~/.agents/skills/jevrev`，OpenCode 和其他兼容 Agent Skills 的工具也可以从
 这里发现 skill。也可以安装到项目目录：Claude Code 使用
@@ -113,7 +125,9 @@ node scripts/install-skill.mjs --destination .claude/skills/jevrev
 ```
 
 PowerShell、Bash 和 Zsh 中命令相同。全局目标会使用当前用户的 home 目录；
-自定义目标接受对应系统的路径格式。
+自定义目标接受对应系统的路径格式。设置 `CODEX_HOME` 后，`codex` 目标会使用
+该目录。若目标位置已有不同的 `SKILL.md`，安装器会拒绝覆盖；确认要替换时
+才使用 `--force`。如果宿主会缓存 skill，安装后重启宿主或刷新 skill 列表。
 
 ## 本地模型
 
@@ -128,4 +142,5 @@ Windows 设置见 [SEMIF_LOCAL.md](SEMIF_LOCAL.md)。
 - `npm link` 后找不到 `jevrev`：检查 npm 全局可执行目录是否在 `PATH` 中；也可在 checkout 中运行 `node dist/cli.js`。
 - 提示缺少 Jev API key：设置 `JEVREV_JEV_API_KEY`，或先用 `--replay`；本地服务可用 `--provider semif`。
 - Skill 能看到但命令运行失败：Skill 和 CLI 是分开安装的；先在该 agent 使用的 shell 中运行 `jevrev --version`。
+- 安装器拒绝覆盖已有文件：先检查文件内容，只在确定要替换时使用 `--force`。
 - SemIf 无法连接：检查服务地址和端口，再运行 `jevrev doctor --provider semif --check`。

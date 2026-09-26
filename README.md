@@ -65,9 +65,10 @@ Decision: winner -> integrate_winner
 ```
 
 Inspect the [executed probe](benchmarks/workflow-fixture/probe.mjs),
-[demo driver](scripts/run-workflow-demo.mjs), and
-[decision tests](tests/workflow-decide.test.ts). The measured throughput varies
-by machine; the required correctness failure is what reverses the ranking.
+[demo driver](scripts/run-workflow-demo.mjs), and the
+[decision tests](https://github.com/Alex314618-create/JevRev/blob/main/tests/workflow-decide.test.ts).
+The measured throughput varies by machine; the required correctness failure is
+what reverses the ranking.
 
 For a longer, zero-context run against a real JSONL ingestion problem, see the
 [recorded case](benchmarks/real-jsonl-ingestion/README.md). It includes the
@@ -142,6 +143,12 @@ Installing the skill does not put `jevrev` on PATH. Confirm
 `jevrev --version` before use. In a project with a local JevRev dependency,
 use `npx --no-install jevrev --version` and prefix the skill's commands with
 `npx --no-install` when the bare command is unavailable.
+
+After `npm link`, the skill installer is also available as
+`jevrev-skill-install --target <codex|claude|opencode|agents>`. From a source
+checkout, `node scripts/install-skill.mjs` is the equivalent command.
+If your host caches skills, restart it or reload its skill list after
+installation.
 
 Then give the host agent this instruction:
 

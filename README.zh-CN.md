@@ -44,7 +44,7 @@ npm run build
 npm run demo:workflow
 ```
 
-想看细节，可以直接读[探针脚本](benchmarks/workflow-fixture/probe.mjs)、[demo 驱动](scripts/run-workflow-demo.mjs)和[决策测试](tests/workflow-decide.test.ts)。还有一个从零开始的 JSONL ingestion 案例，记录了错误捷径、三轮 Loop 和 Long 观察结果：[完整记录](benchmarks/real-jsonl-ingestion/README.md)。
+想看细节，可以直接读[探针脚本](benchmarks/workflow-fixture/probe.mjs)、[demo 驱动](scripts/run-workflow-demo.mjs)和[决策测试](https://github.com/Alex314618-create/JevRev/blob/main/tests/workflow-decide.test.ts)。还有一个从零开始的 JSONL ingestion 案例，记录了错误捷径、三轮 Loop 和 Long 观察结果：[完整记录](benchmarks/real-jsonl-ingestion/README.md)。
 
 ## 三个部分
 
@@ -98,6 +98,10 @@ node scripts/install-skill.mjs --target claude  # Claude Code
 node scripts/install-skill.mjs --target opencode # OpenCode
 node scripts/install-skill.mjs --target agents   # 其他 Agent Skills 工具
 ```
+
+执行 `npm link` 后也可以使用 `jevrev-skill-install --target ...`；不做全局链接时，
+上面的 `node scripts/install-skill.mjs` 就是等价入口。若宿主会缓存 skill，
+安装后重启宿主或刷新 skill 列表。
 
 JevRev 的上下游接口如下：
 
