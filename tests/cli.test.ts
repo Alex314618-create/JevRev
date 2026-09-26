@@ -22,6 +22,25 @@ function run(args: string[], stdin?: string, env = process.env) {
 }
 
 describe("jevrev CLI", () => {
+  it("registers host sessions and controls their Loop/Long monitoring bindings", () => {
+    const directory = mkdtempSync(join(tmpdir(), "jevrev-session-cli-"));
+    const env = { ...process.env, JEVREV_UI_DATA_DIR: join(directory, "ui") };
+    try {
+      const registered = run(["session", "register", "--host", "codex", "--session-id", "codex-123", "--title", "Parser work", "--goal", "Improve parser", "--format", "json"], undefined, env);
+      expect(registered.status).toBe(0);
+      const record = JSON.parse(registered.stdout) as { id: string; source: string };
+      expect(record).toMatchObject({ source: "host" });
+      const monitored = run(["session", "monitor", "--id", record.id, "--loop", "on", "--long", "on", "--format", "json"], undefined, env);
+      expect(monitored.status).toBe(0);
+      expect(JSON.parse(monitored.stdout).monitoring).toEqual({ loop: true, long: true });
+      const listed = run(["session", "list", "--format", "json"], undefined, env);
+      expect(listed.status).toBe(0);
+      expect(JSON.parse(listed.stdout)[0]).toMatchObject({ id: record.id, host: "codex", monitoring: { loop: true, long: true } });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it("runs the shadow activation policy without a provider", () => {
     const result = run([
       "activation",

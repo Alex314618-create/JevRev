@@ -46,7 +46,7 @@ import { reconsiderCandidate, renderReconsiderHuman } from "./reconsider.js";
 import { evaluateActivation, renderActivationHuman, renderActivationJson } from "./activation.js";
 import { activationRequestSchema, type ActivationRequest } from "./domain/schemas.js";
 import { openTui } from "./tui/app.js";
-import { readTuiConfig } from "./tui/store.js";
+import { discoverTuiSessions, readTuiConfig, registerHostSession, setSessionMonitoring, tuiHostSchema, type TuiHost, type TuiSessionStatus } from "./tui/store.js";
 import { recordCampaignSession, recordDecisionSession, recordLongSession, recordLoopSession, recordRankSession } from "./tui/sessions.js";
 
 type Provider = "jev" | "typesafe" | "local" | "semif";
@@ -161,6 +161,9 @@ interface LoopEvidenceRunOptions { directory: string; evidence: string; id: stri
 interface LoopEvidenceMetricOptions { directory: string; evidence: string; input: string; criterion?: string; result?: EvidenceResultStatus; replace: boolean }
 interface LoopEvidenceArtifactOptions { directory: string; evidence: string; id: string; artifactId?: string; file: string; summary: string; status: EvidenceResultStatus; criterion?: string; replace: boolean }
 interface LongFormatOptions { format: OutputFormat; output?: string; directory: string }
+interface SessionRegisterOptions { host: TuiHost; sessionId: string; title: string; goal: string; workspace?: string; status: TuiSessionStatus; format: OutputFormat; output?: string }
+interface SessionListOptions { format: OutputFormat; output?: string }
+interface SessionMonitorOptions { id: string; loop?: string; long?: string; format: OutputFormat; output?: string }
 interface ReconsiderOptions extends LoopFormatOptions {
   campaign: string;
   candidate: string;
@@ -344,6 +347,23 @@ async function runRank(options: RankOptions): Promise<void> {
   const { request, result } = await evaluateRank(options);
   await recordTuiIndex(recordRankSession(process.cwd(), request, result, Math.max(0, Math.round(performance.now() - started)), "run"));
   await emit(options.format === "json" ? renderJson(result) : `${renderHuman(result)}\n`, options.output);
+}
+
+function parseHost(value: string): TuiHost {
+  const parsed = tuiHostSchema.safeParse(value);
+  if (!parsed.success) throw new InvalidArgumentError("must be codex, claude, opencode, or other");
+  return parsed.data;
+}
+
+function parseSessionStatus(value: string): TuiSessionStatus {
+  if (value === "active" || value === "paused" || value === "complete" || value === "aborted") return value;
+  throw new InvalidArgumentError("must be active, paused, complete, or aborted");
+}
+
+function parseMonitorToggle(value: string): boolean {
+  if (value === "on" || value === "true") return true;
+  if (value === "off" || value === "false") return false;
+  throw new InvalidArgumentError("must be on or off");
 }
 
 async function recordTuiIndex(task: Promise<void>): Promise<void> {
@@ -961,6 +981,67 @@ function addLongCommand(program: Command): void {
   });
 }
 
+function renderSessionHuman(session: Awaited<ReturnType<typeof registerHostSession>>): string {
+  const host = session.host ?? "unknown";
+  return `registered ${session.id} (${host})\n`;
+}
+
+async function runSessionRegister(options: SessionRegisterOptions): Promise<void> {
+  validateFormat(options.format);
+  const session = await registerHostSession(process.cwd(), {
+    host: options.host,
+    sessionId: options.sessionId,
+    title: options.title,
+    goal: options.goal,
+    ...(options.workspace === undefined ? {} : { workspace: options.workspace }),
+    status: options.status,
+  });
+  await emit(options.format === "json" ? `${JSON.stringify(session, null, 2)}\n` : renderSessionHuman(session), options.output);
+}
+
+async function runSessionList(options: SessionListOptions): Promise<void> {
+  validateFormat(options.format);
+  const sessions = await discoverTuiSessions(process.cwd());
+  await emit(options.format === "json"
+    ? `${JSON.stringify(sessions, null, 2)}\n`
+    : `${sessions.length === 0 ? "No JevRev sessions registered.\n" : sessions.map((session) => `${session.id}  ${session.source === "host" ? session.host ?? "host" : session.component}  ${session.status}  ${session.title}`).join("\n")}\n`, options.output);
+}
+
+async function runSessionMonitor(options: SessionMonitorOptions): Promise<void> {
+  validateFormat(options.format);
+  if (options.loop === undefined && options.long === undefined) throw new InputError("session monitor requires --loop and/or --long");
+  const record = await setSessionMonitoring(process.cwd(), options.id, {
+    ...(options.loop === undefined ? {} : { loop: parseMonitorToggle(options.loop) }),
+    ...(options.long === undefined ? {} : { long: parseMonitorToggle(options.long) }),
+  });
+  await emit(options.format === "json" ? `${JSON.stringify(record, null, 2)}\n` : `${record.id}  Loop ${record.monitoring.loop ? "ON" : "OFF"}  Long ${record.monitoring.long ? "ON" : "OFF"}\n`, options.output);
+}
+
+function addSessionCommand(program: Command): void {
+  const session = program.command("session").description("Register and control host sessions shown in the project cockpit");
+  session.command("register").description("Register a Codex, Claude, OpenCode, or other host session")
+    .requiredOption("--host <host>", "codex, claude, opencode, or other", parseHost)
+    .requiredOption("--session-id <id>", "stable host session identifier")
+    .requiredOption("--title <title>", "human-readable session title")
+    .requiredOption("--goal <goal>", "session goal")
+    .option("--workspace <path>", "workspace path")
+    .option("--status <status>", "active, paused, complete, or aborted", parseSessionStatus, "active")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write the registration to a file")
+    .action(async (raw: SessionRegisterOptions) => runSessionRegister(raw));
+  session.command("list").description("List registered host and JevRev component sessions")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write the list to a file")
+    .action(async (raw: SessionListOptions) => runSessionList(raw));
+  session.command("monitor").description("Turn Loop and/or Long observation on or off for one session")
+    .requiredOption("--id <id>", "JevRev session ID")
+    .option("--loop <state>", "on or off")
+    .option("--long <state>", "on or off")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write the updated session to a file")
+    .action(async (raw: SessionMonitorOptions) => runSessionMonitor(raw));
+}
+
 async function autoOpenTui(actionCommand: Command, rootCommand: Command): Promise<void> {
   if (env.JEVREV_NO_TUI === "1" || rootCommand.opts<{ tui?: boolean }>().tui === false) return;
   if (input.isTTY !== true || stdout.isTTY !== true) return;
@@ -1001,6 +1082,7 @@ function createProgram(): Command {
   addRankCommand(program, "run");
   addRankCommand(program, "rank");
   addRankCommand(program, "sift");
+  addSessionCommand(program);
   program
     .command("reconsider")
     .description("Re-evaluate one Sift review candidate for a single bounded probe")

@@ -7,10 +7,13 @@ import type { LongSpec } from "../long/schemas.js";
 import { loadLongStore } from "../long/store.js";
 import { longStatusCommand } from "../long/commands.js";
 import { loadLoop } from "../loop/store.js";
-import { registerComponentSession, type TuiSessionRecord } from "./store.js";
+import { DEFAULT_TUI_MONITORING, readTuiSession, registerComponentSession, type TuiMonitoring, type TuiSessionRecord } from "./store.js";
 
 function nowIso(): string { return new Date().toISOString(); }
 function summarizeLongGoal(goal: string): string { return goal.length <= 180 ? goal : `${goal.slice(0, 177)}...`; }
+async function existingMonitoring(root: string, id: string, fallback: TuiMonitoring): Promise<TuiMonitoring> {
+  return (await readTuiSession(root, id))?.monitoring ?? fallback;
+}
 
 export async function recordRankSession(root: string, request: RankRequest, result: RankResult, _workMs: number, component: "sift" | "run"): Promise<void> {
   const sift = component === "sift";
@@ -19,7 +22,7 @@ export async function recordRankSession(root: string, request: RankRequest, resu
   const review = result.decisions.filter((candidate) => candidate.status === "review").map((candidate) => `Review ${candidate.candidate_id}`);
   const rejected = result.decisions.filter((candidate) => candidate.status === "reject").map((candidate) => `Rejected ${candidate.candidate_id}`);
   const record: TuiSessionRecord = {
-    version: 1, id, component: "sift", title: summarizeLongGoal(request.task.goal), goal: request.task.goal,
+    version: 1, id, component: "sift", source: "component", monitoring: await existingMonitoring(root, id, DEFAULT_TUI_MONITORING), title: summarizeLongGoal(request.task.goal), goal: request.task.goal,
     status: "complete", started_at: nowIso(), updated_at: nowIso(), agent_work_ms: null,
     summary: `${selected.length} selected · ${review.length} review · ${rejected.length} rejected`,
     details: [sift ? "JevSift ranking complete; selection is not execution proof." : "Candidate ranking complete.", ...selected, ...review, ...rejected].slice(0, 64),
@@ -32,7 +35,7 @@ export async function recordCampaignSession(root: string, campaign: Campaign, _w
   const selected = campaign.work_orders.map((order) => `${order.candidate_id} · probe ready`);
   const review = campaign.sift.decisions.filter((decision) => decision.status === "review").map((decision) => `${decision.candidate_id} · needs human review`);
   const record: TuiSessionRecord = {
-    version: 1, id: campaign.campaign_id, component: "sift", title: summarizeLongGoal(campaign.request.task.goal), goal: campaign.request.task.goal,
+    version: 1, id: campaign.campaign_id, component: "sift", source: "component", monitoring: await existingMonitoring(root, campaign.campaign_id, DEFAULT_TUI_MONITORING), title: summarizeLongGoal(campaign.request.task.goal), goal: campaign.request.task.goal,
     status: "active", started_at: nowIso(), updated_at: nowIso(), agent_work_ms: null,
     summary: `${selected.length} probe work order${selected.length === 1 ? "" : "s"} created`,
     details: ["Candidates are selected for bounded probing; none is verified yet.", ...selected, ...review].slice(0, 64),
@@ -47,7 +50,7 @@ export async function recordDecisionSession(root: string, campaign: Campaign, re
   const verified: string[] = [];
   const attention = outcome === "human_review" || outcome === "no_winner" ? [outcome] : [];
   const record: TuiSessionRecord = {
-    version: 1, id: campaign.campaign_id, component: "sift", title: summarizeLongGoal(campaign.request.task.goal), goal: campaign.request.task.goal,
+    version: 1, id: campaign.campaign_id, component: "sift", source: "component", monitoring: await existingMonitoring(root, campaign.campaign_id, DEFAULT_TUI_MONITORING), title: summarizeLongGoal(campaign.request.task.goal), goal: campaign.request.task.goal,
     status: "complete", started_at: nowIso(), updated_at: nowIso(), agent_work_ms: null,
     summary: `Decision · ${outcome}`,
     details: [`Evidence-based decision: ${outcome}`, ...verified, ...attention],
@@ -64,9 +67,9 @@ export async function recordLoopSession(root: string, loop: LoadedLoop): Promise
   const verified = loop.state.last_audit?.outcome === "completed" ? ["Completion audit passed"] : loop.state.last_audit?.material_progress ? [`Round ${loop.state.last_round} · material progress recorded`] : [];
   const created = loop.events[0]?.timestamp ?? nowIso();
   const record: TuiSessionRecord = {
-    version: 1, id: loop.state.loop_id, component: "loop", title: loop.spec.title, goal: loop.spec.goal, status: sessionStatus,
+    version: 1, id: loop.state.loop_id, component: "loop", source: "component", monitoring: await existingMonitoring(root, loop.state.loop_id, { loop: true, long: false }), title: loop.spec.title, goal: loop.spec.goal, status: sessionStatus,
     started_at: created, updated_at: loop.events.at(-1)?.timestamp ?? created, agent_work_ms: loop.state.cumulative_wall_ms,
-    directory: loop.directory, summary: `Round ${loop.state.last_round} · ${status} · ${loop.state.cumulative_provider_tokens} tokens`,
+    directory: loop.directory, loop_directory: loop.directory, summary: `Round ${loop.state.last_round} · ${status} · ${loop.state.cumulative_provider_tokens} tokens`,
     details: [
       `round ${loop.state.last_round}`, `head ${loop.state.head_revision}`, `stalled rounds ${loop.state.consecutive_stalled}`,
       ...(loop.state.last_audit === null ? [] : [`last audit · ${loop.state.last_audit.outcome}`, loop.state.last_audit.next_action.reason]),
@@ -84,9 +87,9 @@ export async function recordLongSession(root: string, directory: string, spec?: 
   const verified = [...passed].map((milestone) => `${milestone} · verified`);
   const inProgress = (spec ?? store.spec).milestones.filter((milestone) => !passed.has(milestone.id)).map((milestone) => `${milestone.id} · ${milestone.description}`);
   const record: TuiSessionRecord = {
-    version: 1, id: store.spec.session_id, component: "long", title: store.spec.title, goal: store.spec.goal,
+    version: 1, id: store.spec.session_id, component: "long", source: "component", monitoring: await existingMonitoring(root, store.spec.session_id, { loop: false, long: true }), title: store.spec.title, goal: store.spec.goal,
     status: "active", started_at: info.created_at ?? nowIso(), updated_at: store.snapshot.last_event_at ?? info.created_at ?? nowIso(),
-    agent_work_ms: null, directory: store.directory,
+    agent_work_ms: null, directory: store.directory, long_directory: store.directory,
     summary: `${store.snapshot.sequence} events · ${openAlerts.length} open alerts`,
     details: [`${status.signals.cost.tool_calls} tool calls`, `${status.signals.cost.provider_tokens} provider tokens`, ...openAlerts.map((alert) => `${alert.severity} · ${alert.message}`)].slice(0, 64),
     kanban: { in_progress: inProgress, attention: openAlerts.map((alert) => `${alert.severity.toUpperCase()} · ${alert.message}`), verified },

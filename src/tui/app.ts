@@ -1,11 +1,11 @@
-import { discoverTuiSessions, readTuiConfig, readTuiNavigation, writeTuiConfig, writeTuiNavigation, type TuiConfig, type TuiSessionRecord } from "./store.js";
+import { DEFAULT_TUI_MONITORING, discoverTuiSessions, readTuiConfig, readTuiNavigation, setSessionMonitoring, writeTuiConfig, writeTuiNavigation, type TuiConfig, type TuiSessionRecord } from "./store.js";
 import { refreshRegisteredSessions } from "./sessions.js";
 
 type Screen = "sessions" | "kanban" | "config";
 type Input = NodeJS.ReadStream & { setRawMode?: (mode: boolean) => void };
 type Output = NodeJS.WriteStream;
 
-interface ViewState { screen: Screen; selectedSession: number; selectedSessionId: string | null; selectedConfig: number; }
+interface ViewState { screen: Screen; selectedSession: number; selectedSessionId: string | null; selectedConfig: number; selectedMonitor?: number; }
 interface AppOptions { initialScreen?: Screen; initialSessionId?: string; intervalMs?: number; input?: Input; output?: Output; }
 
 const C = { reset: "\x1b[0m", dim: "\x1b[2m", bold: "\x1b[1m", cyan: "\x1b[36m", teal: "\x1b[32m", yellow: "\x1b[33m", magenta: "\x1b[35m", red: "\x1b[31m", gray: "\x1b[90m" } as const;
@@ -20,13 +20,14 @@ function elapsed(ms: number | null): string { if (ms === null) return "not recor
 function age(started: string, now: number): string { const stamp = Date.parse(started); return Number.isFinite(stamp) ? elapsed(now - stamp) : "unknown"; }
 
 function statusTone(status: TuiSessionRecord["status"]): Tone { return status === "active" ? "teal" : status === "paused" ? "yellow" : status === "aborted" ? "red" : "gray"; }
-function componentName(value: TuiSessionRecord["component"]): string { return value === "long" ? "JevLong" : value === "loop" ? "JevLoop" : "JevSift"; }
+function componentName(value: TuiSessionRecord["component"]): string { return value === "long" ? "JevLong" : value === "loop" ? "JevLoop" : value === "session" ? "Host session" : "JevSift"; }
+function sourceName(session: TuiSessionRecord): string { return session.source === "host" && session.host !== undefined ? session.host.toUpperCase() : componentName(session.component); }
 
 function sessionsPage(sessions: readonly TuiSessionRecord[], selected: number, width: number, height: number, enabled: boolean): string[] {
   const rows: string[] = [];
   if (sessions.length === 0) {
     rows.push(color("SESSIONS", "bold", enabled)); rows.push(""); rows.push(color("No JevRev sessions in this project yet.", "gray", enabled));
-    rows.push("Activate JevSift, JevLoop, or JevLong to create the first session.");
+    rows.push("No session is registered yet. A host can register its Codex or Claude session here.");
     return rows;
   }
   const selectedSession = sessions[Math.max(0, Math.min(selected, sessions.length - 1))]!;
@@ -34,7 +35,7 @@ function sessionsPage(sessions: readonly TuiSessionRecord[], selected: number, w
   const rightWidth = Math.max(20, width - listWidth - 2);
   const join = (left: string, right: string): string => `${fit(left, listWidth)}  ${fit(right, rightWidth)}`;
   rows.push(join(color(`SESSIONS  ${sessions.length}`, "bold", enabled), color("PREVIEW", "bold", enabled)));
-  rows.push(join("SESSION · COMPONENT · AGE · AGENT WORK", selectedSession.title));
+  rows.push(join("SESSION · SOURCE · AGE · AGENT WORK", selectedSession.title));
   rows.push(line(width, enabled));
   const visibleCount = Math.max(1, height - 12);
   const start = Math.max(0, Math.min(selected - Math.floor(visibleCount / 2), sessions.length - visibleCount));
@@ -50,15 +51,27 @@ function sessionsPage(sessions: readonly TuiSessionRecord[], selected: number, w
   for (let i = start; i < Math.max(displayed, start + preview.length); i += 1) {
     const session = sessions[i]!;
     const marker = i < displayed && i === selected ? color("›", "cyan", enabled) : " ";
-    const left = i < displayed && session !== undefined ? `${marker} ${session.title} · ${componentName(session.component)} · ${age(session.started_at, Date.now())} · ${elapsed(session.agent_work_ms)}` : "";
+    const left = i < displayed && session !== undefined ? `${marker} ${session.title} · ${sourceName(session)} · ${age(session.started_at, Date.now())} · ${elapsed(session.agent_work_ms)}` : "";
     rows.push(join(left, preview[i - start] ?? ""));
   }
   return rows;
 }
 
-function kanbanPage(session: TuiSessionRecord | undefined, width: number, enabled: boolean): string[] {
+function monitorLine(marker: string, label: string, active: boolean, binding: string, enabled: boolean): string {
+  const state = active ? color("ON", "teal", enabled) : color("OFF", "gray", enabled);
+  return `${marker} ${label.padEnd(13, " ")} [${state}]  ${binding}`;
+}
+
+function kanbanPage(session: TuiSessionRecord | undefined, width: number, enabled: boolean, selectedMonitor: number): string[] {
   if (session === undefined) return [color("No session selected", "gray", enabled)];
-  const rows = [color(`KANBAN   ${session.title}`, "bold", enabled), session.goal, ""];
+  const monitoring = session.monitoring ?? DEFAULT_TUI_MONITORING;
+  const loopBinding = session.loop_directory === undefined ? "armed; waiting for a Loop store" : session.loop_directory;
+  const longBinding = session.long_directory === undefined ? "armed; waiting for Long events" : session.long_directory;
+  const rows = [color(`MONITOR / KANBAN   ${session.title}`, "bold", enabled), session.goal, ""];
+  rows.push(color("OBSERVATION SWITCHES", "bold", enabled));
+  rows.push(monitorLine(selectedMonitor === 0 ? color("›", "cyan", enabled) : " ", "LOOP MONITOR", monitoring.loop, loopBinding, enabled));
+  rows.push(monitorLine(selectedMonitor === 1 ? color("›", "cyan", enabled) : " ", "LONG MONITOR", monitoring.long, longBinding, enabled));
+  rows.push(color("Space toggles the selected monitor; l/o selects Loop/Long.", "gray", enabled), "");
   const colWidth = Math.max(12, Math.floor((width - 4) / 3));
   const columns = [
     { name: "IN PROGRESS", items: session.kanban.in_progress, tone: "cyan" as Tone },
@@ -75,7 +88,7 @@ function kanbanPage(session: TuiSessionRecord | undefined, width: number, enable
     }).join("  "));
   }
   rows.push(""); rows.push(line(width, enabled));
-  rows.push(`${color("Component", "gray", enabled)} ${componentName(session.component)}    ${color("Status", "gray", enabled)} ${color(session.status.toUpperCase(), statusTone(session.status), enabled)}    ${color("Session age", "gray", enabled)} ${age(session.started_at, Date.now())}    ${color("Agent work", "gray", enabled)} ${elapsed(session.agent_work_ms)}`);
+  rows.push(`${color("Source", "gray", enabled)} ${sourceName(session)}    ${color("Status", "gray", enabled)} ${color(session.status.toUpperCase(), statusTone(session.status), enabled)}    ${color("Session age", "gray", enabled)} ${age(session.started_at, Date.now())}    ${color("Agent work", "gray", enabled)} ${elapsed(session.agent_work_ms)}`);
   rows.push(`${color("Summary", "gray", enabled)} ${session.summary}`);
   for (const detail of session.details.slice(0, 4)) rows.push(`· ${detail}`);
   return rows;
@@ -101,12 +114,12 @@ export function renderTuiPage(sessions: readonly TuiSessionRecord[], config: Tui
   const heading = `${color("JevRev", "cyan", enabled)}   ${selected === undefined ? "Project sessions" : `${componentName(selected.component)}  ·  ${selected.title}`}`;
   const rows = [fit(heading, width), line(width, enabled)];
   const content = state.screen === "sessions" ? sessionsPage(sessions, state.selectedSession, width, height, enabled)
-    : state.screen === "kanban" ? kanbanPage(selected, width, enabled)
+    : state.screen === "kanban" ? kanbanPage(selected, width, enabled, state.selectedMonitor ?? 0)
       : configPage(config, state.selectedConfig, enabled);
   const bodyHeight = height - 5;
   for (let index = 0; index < bodyHeight; index += 1) rows.push(fit(content[index] ?? "", width));
   rows.push(line(width, enabled));
-  rows.push(fit("←/→ page   ↑/↓ select   Enter open   c config   Space toggle   q quit", width));
+  rows.push(fit("←/→ page   ↑/↓ select   Enter open   c config   Space toggle monitor   q quit", width));
   const circles = [0, 1, 2].map((index) => index === screenIndex ? color("●", "cyan", enabled) : color("○", "gray", enabled)).join("     ");
   rows.push(fit(center(circles, width), width));
   return rows.slice(0, height).join("\r\n");
@@ -122,6 +135,8 @@ function decode(chunk: Buffer | string): string {
   if (value === " ") return "space";
   if (value === "q" || value === "\u0003") return "quit";
   if (value === "c") return "config";
+  if (value === "l") return "loop";
+  if (value === "o") return "long";
   if (value === "+" || value === "=") return "increase";
   if (value === "-") return "decrease";
   if (value === "s") return "save";
@@ -133,7 +148,7 @@ export async function openTui(root = process.cwd(), options: AppOptions = {}): P
   const config = await readTuiConfig(root); let sessions = await discoverTuiSessions(root);
   let refreshInterval = options.intervalMs ?? config.refresh_ms;
   const navigation = await readTuiNavigation(root);
-  let state: ViewState = { screen: options.initialScreen ?? navigation.page, selectedSession: 0, selectedSessionId: options.initialSessionId ?? (options.initialScreen === undefined ? navigation.session_id : null), selectedConfig: 0 };
+  let state: ViewState = { screen: options.initialScreen ?? navigation.page, selectedSession: 0, selectedSessionId: options.initialSessionId ?? (options.initialScreen === undefined ? navigation.session_id : null), selectedConfig: 0, selectedMonitor: 0 };
   if (state.screen === "kanban" && sessions.length === 0) state.screen = "sessions";
   let timer: NodeJS.Timeout | undefined; let doneResolve: (() => void) | undefined; let doneReject: ((error: unknown) => void) | undefined; let renderBusy = false; let renderPending = false;
   const done = new Promise<void>((resolve, reject) => { doneResolve = resolve; doneReject = reject; });
@@ -159,18 +174,26 @@ export async function openTui(root = process.cwd(), options: AppOptions = {}): P
   };
   const onData = (chunk: Buffer | string): void => {
     const key = decode(chunk);
+    const selectedSession = sessions[state.selectedSession];
     if (key === "quit") { doneResolve?.(); return; }
     let changed = true;
     if (key === "left") state.screen = state.screen === "config" ? "kanban" : "sessions";
     else if (key === "right") state.screen = state.screen === "sessions" ? "kanban" : "config";
     else if (key === "config") state.screen = "config";
-    else if (key === "enter" && state.screen === "sessions") { state.screen = "kanban"; state.selectedSessionId = sessions[state.selectedSession]?.id ?? null; }
+    else if (key === "enter" && state.screen === "sessions") { state.screen = "kanban"; state.selectedSessionId = sessions[state.selectedSession]?.id ?? null; state.selectedMonitor = 0; }
+    else if ((key === "loop" || key === "long") && state.screen === "kanban") { state.selectedMonitor = key === "loop" ? 0 : 1; }
     else if (key === "up") {
       if (state.screen === "sessions") { state.selectedSession = Math.max(0, state.selectedSession - 1); state.selectedSessionId = sessions[state.selectedSession]?.id ?? null; }
       else if (state.screen === "config") state.selectedConfig = Math.max(0, state.selectedConfig - 1);
+      else if (state.screen === "kanban") state.selectedMonitor = Math.max(0, (state.selectedMonitor ?? 0) - 1);
     } else if (key === "down") {
       if (state.screen === "sessions") { state.selectedSession = Math.min(sessions.length - 1, state.selectedSession + 1); state.selectedSessionId = sessions[state.selectedSession]?.id ?? null; }
       else if (state.screen === "config") state.selectedConfig = Math.min(2, state.selectedConfig + 1);
+      else if (state.screen === "kanban") state.selectedMonitor = Math.min(1, (state.selectedMonitor ?? 0) + 1);
+    } else if (key === "space" && state.screen === "kanban" && selectedSession !== undefined) {
+      const monitor = state.selectedMonitor === 1 ? "long" : "loop";
+      void setSessionMonitoring(root, selectedSession.id, { [monitor]: !selectedSession.monitoring[monitor] }).then(() => render()).catch((error) => doneReject?.(error));
+      changed = false;
     } else if (key === "space" && state.screen === "config") {
       if (state.selectedConfig === 0) config.auto_open_on_component = !config.auto_open_on_component;
       else if (state.selectedConfig === 2) config.color = !config.color;

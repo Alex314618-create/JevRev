@@ -36,6 +36,22 @@ JevRev has three product components and a shared evidence protocol:
   When a host is running from an interactive terminal but needs a clean JSON
   stream, add the root `--no-tui` flag before the component command.
 
+Host sessions can be made visible in the cockpit without exposing private
+transcripts. At the start of a Codex or Claude Code task, register the stable
+host identity once:
+
+```bash
+jevrev session register --host codex --session-id <host-session-id> \
+  --title "<short task title>" --goal "<task goal>"
+jevrev session register --host claude --session-id <host-session-id> \
+  --title "<short task title>" --goal "<task goal>"
+```
+
+Use `jevrev session list --format json` to inspect all host and JevRev
+component sessions. The cockpit's second page persists the selected session's
+Loop and Long observation switches; enabling a switch arms that observer for
+the registered session but never starts, retries, or steers the host agent.
+
 `Probe`, `Evidence`, and `Decide` are shared workflow concepts and judge
 boundaries. They are how the host agent performs work, records facts, and lets
 Jev answer narrow questions inside Sift and Loop; Sift campaigns and Loop

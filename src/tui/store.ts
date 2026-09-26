@@ -4,10 +4,21 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { InputError } from "../domain/errors.js";
 
+export const tuiHostSchema = z.enum(["codex", "claude", "opencode", "other"]);
+export type TuiHost = z.infer<typeof tuiHostSchema>;
+
+const monitoringSchema = z.object({ loop: z.boolean(), long: z.boolean() }).strict();
+export type TuiMonitoring = z.infer<typeof monitoringSchema>;
+export const DEFAULT_TUI_MONITORING: TuiMonitoring = { loop: false, long: false };
+
 const sessionSchema = z.object({
   version: z.literal(1),
   id: z.string().min(1).max(128).regex(/^[a-zA-Z0-9_-]+$/),
-  component: z.enum(["sift", "loop", "long"]),
+  component: z.enum(["sift", "loop", "long", "session"]),
+  source: z.enum(["component", "host"]).default("component"),
+  host: tuiHostSchema.optional(),
+  host_session_id: z.string().trim().min(1).max(512).optional(),
+  workspace: z.string().max(4_096).optional(),
   title: z.string().trim().min(1).max(240),
   goal: z.string().trim().min(1).max(2_000),
   status: z.enum(["active", "paused", "complete", "aborted"]),
@@ -15,11 +26,24 @@ const sessionSchema = z.object({
   updated_at: z.string().datetime({ offset: true }),
   agent_work_ms: z.number().int().nonnegative().nullable(),
   directory: z.string().max(4_096).optional(),
+  loop_directory: z.string().max(4_096).optional(),
+  long_directory: z.string().max(4_096).optional(),
+  monitoring: monitoringSchema.default(DEFAULT_TUI_MONITORING),
   summary: z.string().max(1_000),
   details: z.array(z.string().max(1_000)).max(64),
   kanban: z.object({ in_progress: z.array(z.string().max(1_000)).max(64), attention: z.array(z.string().max(1_000)).max(64), verified: z.array(z.string().max(1_000)).max(64) }).strict(),
 }).strict();
 export type TuiSessionRecord = z.infer<typeof sessionSchema>;
+export type TuiSessionStatus = TuiSessionRecord["status"];
+
+export interface HostSessionRegistration {
+  host: TuiHost;
+  sessionId: string;
+  title: string;
+  goal: string;
+  workspace?: string;
+  status?: TuiSessionStatus;
+}
 
 const configSchema = z.object({
   version: z.literal(1),
@@ -94,6 +118,56 @@ export async function saveTuiSession(rootInput: string, input: TuiSessionRecord)
   return value;
 }
 
+function sessionFile(rootInput: string, id: string): string {
+  return join(paths(rootInput).sessions, `${id}.json`);
+}
+
+export async function readTuiSession(rootInput: string, id: string): Promise<TuiSessionRecord | undefined> {
+  try { return sessionSchema.parse(JSON.parse(await readFile(sessionFile(rootInput, id), "utf8")) as unknown); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    return undefined;
+  }
+}
+
+function sessionIdForHost(host: TuiHost, sessionId: string): string {
+  const safe = sessionId.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 96) || "session";
+  return `host_${host}_${safe}`.slice(0, 128);
+}
+
+export async function registerHostSession(rootInput: string, registration: HostSessionRegistration): Promise<TuiSessionRecord> {
+  const existing = await readTuiSession(rootInput, sessionIdForHost(registration.host, registration.sessionId));
+  const now = new Date().toISOString();
+  return saveTuiSession(rootInput, {
+    version: 1,
+    id: sessionIdForHost(registration.host, registration.sessionId),
+    component: "session",
+    source: "host",
+    host: registration.host,
+    host_session_id: registration.sessionId,
+    ...(registration.workspace === undefined ? {} : { workspace: registration.workspace }),
+    title: registration.title,
+    goal: registration.goal,
+    status: registration.status ?? existing?.status ?? "active",
+    started_at: existing?.started_at ?? now,
+    updated_at: now,
+    agent_work_ms: null,
+    ...(existing?.directory === undefined ? {} : { directory: existing.directory }),
+    ...(existing?.loop_directory === undefined ? {} : { loop_directory: existing.loop_directory }),
+    ...(existing?.long_directory === undefined ? {} : { long_directory: existing.long_directory }),
+    monitoring: existing?.monitoring ?? DEFAULT_TUI_MONITORING,
+    summary: existing?.summary ?? `${registration.host} session registered`,
+    details: existing?.details ?? [`Host session ${registration.sessionId}`],
+    kanban: existing?.kanban ?? { in_progress: [], attention: [], verified: [] },
+  });
+}
+
+export async function setSessionMonitoring(rootInput: string, id: string, patch: Partial<TuiMonitoring>): Promise<TuiSessionRecord> {
+  const current = await readTuiSession(rootInput, id);
+  if (current === undefined) throw new InputError(`Unknown JevRev session: ${id}`);
+  return saveTuiSession(rootInput, { ...current, monitoring: { ...current.monitoring, ...patch }, updated_at: new Date().toISOString() });
+}
+
 async function readRegisteredSessions(directory: string): Promise<TuiSessionRecord[]> {
   const entries = await readdir(directory, { withFileTypes: true }).catch((error: unknown) => {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
@@ -136,8 +210,8 @@ export async function discoverTuiSessions(rootInput: string): Promise<TuiSession
       if (spec.kind === "jevrev.long-spec" && typeof spec.session_id === "string") {
         const info = JSON.parse(await readFile(join(directory, "identity.json"), "utf8")) as { created_at?: string };
         const updated = (await stat(join(directory, "snapshot.json"))).mtime.toISOString();
-        if (!byId.has(spec.session_id)) byId.set(spec.session_id, sessionSchema.parse({ version: 1, id: spec.session_id, component: "long", title: spec.title, goal: spec.goal,
-          status: "active", started_at: info.created_at ?? updated, updated_at: updated, agent_work_ms: 0, directory,
+        if (!byId.has(spec.session_id)) byId.set(spec.session_id, sessionSchema.parse({ version: 1, id: spec.session_id, component: "long", source: "component", monitoring: { loop: false, long: true }, title: spec.title, goal: spec.goal,
+          status: "active", started_at: info.created_at ?? updated, updated_at: updated, agent_work_ms: 0, directory, long_directory: directory,
           summary: "Long observer session", details: [`${Array.isArray(spec.milestones) ? spec.milestones.length : 0} milestones`],
           kanban: { in_progress: [], attention: [], verified: [] } }));
       }

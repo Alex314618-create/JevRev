@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openTui, renderTuiPage } from "../src/tui/app.js";
-import { DEFAULT_TUI_CONFIG, discoverTuiSessions, readTuiConfig, readTuiNavigation, saveTuiSession, writeTuiConfig, type TuiSessionRecord } from "../src/tui/store.js";
+import { DEFAULT_TUI_CONFIG, DEFAULT_TUI_MONITORING, discoverTuiSessions, readTuiConfig, readTuiNavigation, registerHostSession, saveTuiSession, setSessionMonitoring, writeTuiConfig, type TuiSessionRecord } from "../src/tui/store.js";
 
 const roots: string[] = [];
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
@@ -12,7 +12,7 @@ afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: 
 function root(): string { const value = mkdtempSync(join(tmpdir(), "jevrev-ui-")); roots.push(value); return value; }
 
 const session: TuiSessionRecord = {
-  version: 1, id: "jvc_0123456789ab", component: "sift", title: "Parser throughput", goal: "Improve parser throughput without changing output",
+  version: 1, id: "jvc_0123456789ab", component: "sift", source: "component", monitoring: { ...DEFAULT_TUI_MONITORING }, title: "Parser throughput", goal: "Improve parser throughput without changing output",
   status: "active", started_at: "2026-09-23T10:00:00.000Z", updated_at: "2026-09-23T10:05:00.000Z", agent_work_ms: 180_000,
   summary: "2 probe work orders created", details: ["Candidates are selected for bounded probing; none is verified yet."],
   kanban: { in_progress: ["cache hot tokens", "reuse parser state"], attention: ["Review memory risk"], verified: ["Baseline captured"] },
@@ -44,12 +44,21 @@ describe("JevRev TUI shell", () => {
   });
 
   it("renders the kanban lanes without claiming sift selections are verified", () => {
-    const frame = renderTuiPage([session], DEFAULT_TUI_CONFIG, { screen: "kanban", selectedSession: 0, selectedConfig: 0 }, { width: 96, height: 24 });
+    const frame = renderTuiPage([session], { ...DEFAULT_TUI_CONFIG, color: false }, { screen: "kanban", selectedSession: 0, selectedConfig: 0 }, { width: 96, height: 24 });
+    expect(frame).toContain("LOOP MONITOR");
+    expect(frame).toContain("LONG MONITOR");
+    expect(frame).toContain("[OFF]");
     expect(frame).toContain("IN PROGRESS");
     expect(frame).toContain("NEEDS ATTENTION");
     expect(frame).toContain("VERIFIED");
     expect(frame).toContain("Baseline captured");
     expect(frame).toContain("cache hot tokens");
+  });
+
+  it("opens an empty project without requiring a Long store", () => {
+    const frame = renderTuiPage([], { ...DEFAULT_TUI_CONFIG, color: false }, { screen: "sessions", selectedSession: 0, selectedConfig: 0 }, { width: 80, height: 20 });
+    expect(frame).toContain("No session is registered yet");
+    expect(frame).toContain("Codex or Claude");
   });
 
   it("persists project config and defaults to component-triggered TUI", async () => {
@@ -81,6 +90,16 @@ describe("JevRev TUI shell", () => {
     expect(sessions[0]).toMatchObject({ started_at: session.started_at, updated_at: "2026-09-23T11:00:00.000Z", agent_work_ms: 240_000 });
   });
 
+  it("registers host sessions and persists monitor switches", async () => {
+    const directory = root();
+    const host = await registerHostSession(directory, { host: "claude", sessionId: "claude-42", title: "Claude refactor", goal: "Refactor the parser" });
+    expect(host.source).toBe("host");
+    expect(host.host).toBe("claude");
+    expect((await discoverTuiSessions(directory))[0]?.host_session_id).toBe("claude-42");
+    const updated = await setSessionMonitoring(directory, host.id, { long: true });
+    expect(updated.monitoring).toEqual({ loop: false, long: true });
+  });
+
   it("handles page navigation, remembers selection, and restores the terminal", async () => {
     const directory = root(); await saveTuiSession(directory, session);
     class FakeInput extends EventEmitter {
@@ -96,8 +115,11 @@ describe("JevRev TUI shell", () => {
     }
     const input = new FakeInput(); const output = new FakeOutput();
     const done = openTui(directory, { input, output, intervalMs: 10_000 });
-    await new Promise((resolve) => setTimeout(resolve, 75));
-      input.emit("data", "\u001b[C");
+    for (let attempt = 0; attempt < 100 && !output.output.includes("PREVIEW"); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(output.output).toContain("PREVIEW");
+    input.emit("data", "\u001b[C");
     await new Promise((resolve) => setTimeout(resolve, 75));
     input.emit("data", "\u001b[C");
     await new Promise((resolve) => setTimeout(resolve, 75));
@@ -127,6 +149,21 @@ describe("JevRev TUI shell", () => {
     input.emit("data", "q");
     await done;
     expect(output.output).toContain("Current Long run");
+  });
+
+  it("turns the selected Kanban monitor switch into persisted state", async () => {
+    const directory = root(); await saveTuiSession(directory, session);
+    class FakeInput extends EventEmitter { isTTY = true; setRawMode(): void {} resume(): this { return this; } pause(): this { return this; } }
+    class FakeOutput extends EventEmitter { isTTY = true; columns = 100; rows = 28; output = ""; write(value: string): boolean { this.output += value; return true; } }
+    const input = new FakeInput(); const output = new FakeOutput();
+    const done = openTui(directory, { initialScreen: "kanban", initialSessionId: session.id, input, output, intervalMs: 10_000 });
+    for (let attempt = 0; attempt < 100 && !output.output.includes("LOOP MONITOR"); attempt += 1) await new Promise((resolve) => setTimeout(resolve, 20));
+    input.emit("data", " ");
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    input.emit("data", "q");
+    await done;
+    const records = await discoverTuiSessions(directory);
+    expect(records[0]?.monitoring.loop).toBe(true);
   });
 
   it("restores the alternate screen if raw-mode setup fails", async () => {
