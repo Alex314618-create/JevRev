@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -19,6 +19,18 @@ describe("skill installer", () => {
     const result = run([]);
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("exactly one of --target or --destination");
+  });
+
+  it("documents the explicit OpenCode target", () => {
+    const result = run(["--help"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("<codex|claude|opencode|agents|dsh>");
+  });
+
+  it("resolves the OpenCode target under the user's config directory", () => {
+    const result = run(["--target", "opencode", "--dry-run"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe(join(homedir(), ".config", "opencode", "skills", "jevrev", "SKILL.md"));
   });
 
   it("installs, leaves an identical file alone, and protects changes", () => {

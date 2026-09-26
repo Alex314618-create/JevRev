@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document source-based installation, CLI linking, provider setup, and agent
+  skill installation on Windows, macOS, and Linux; add an OS-matrix CI check.
 - Add the shadow-only `jevrev activation` policy to measure whether Sift is
   worth opening, with explicit bypass decisions, reason codes, and a documented
   host-agent assessment contract.

@@ -45,7 +45,7 @@ Run the complete case:
 ```bash
 git clone https://github.com/Alex314618-create/JevRev.git
 cd JevRev
-npm install
+npm ci
 npm run build
 npm run demo:workflow
 ```
@@ -122,14 +122,20 @@ when another tool needs the full snapshot.
 The result is a simple split: the LLM does the expensive creative work, while
 JevRev prevents the workflow from repeatedly paying for bad directions.
 
-## Use it from Codex
+## Install the CLI and agent skill
 
-Build the CLI and install the bundled skill into Codex:
+The CLI and skill installer work on Windows, macOS, and Linux. The repository
+is not currently published to the npm registry, so install from the source
+checkout. Follow the [installation guide](docs/INSTALL.md) for shell-specific
+setup, global command linking, provider configuration, and agent skill paths.
+
+After cloning and building, choose the target for your agent:
 
 ```bash
-npm install
-npm run build
-node scripts/install-skill.mjs --target codex
+node scripts/install-skill.mjs --target codex   # Codex
+node scripts/install-skill.mjs --target claude  # Claude Code
+node scripts/install-skill.mjs --target opencode # OpenCode
+node scripts/install-skill.mjs --target agents   # other Agent Skills hosts
 ```
 
 Installing the skill does not put `jevrev` on PATH. Confirm
@@ -253,6 +259,7 @@ the screenshots.
 
 ## Read next
 
+- [Install and use JevRev](docs/INSTALL.md) · [简体中文安装指南](docs/INSTALL.zh-CN.md)
 - [Workflow guide](docs/WORKFLOW.md)
 - [Sift activation policy](docs/ACTIVATION.md)
 - [Protocol and JSON contracts](docs/PROTOCOL.md)
@@ -264,7 +271,7 @@ the screenshots.
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run check
 npm test
 npm run build

@@ -23,12 +23,13 @@ function targetDirectory(target) {
   const roots = {
     codex: configuredCodexHome ? expandHome(configuredCodexHome) : join(homedir(), ".codex"),
     agents: join(homedir(), ".agents"),
+    opencode: join(homedir(), ".config", "opencode"),
     claude: join(homedir(), ".claude"),
     dsh: join(homedir(), ".dsh"),
   };
   const root = roots[target];
   if (!root) {
-    throw new UsageError(`Unknown target "${target}". Choose codex, agents, claude, or dsh.`);
+    throw new UsageError(`Unknown target "${target}". Choose codex, claude, opencode, agents, or dsh.`);
   }
   return join(root, "skills", "jevrev");
 }
@@ -78,7 +79,7 @@ function parseArguments(argv) {
 function printHelp() {
   process.stdout.write("Install the bundled JevRev agent skill.\n\n");
   process.stdout.write("Usage:\n");
-  process.stdout.write("  jevrev-skill-install --target <codex|agents|claude|dsh>\n");
+  process.stdout.write("  jevrev-skill-install --target <codex|claude|opencode|agents|dsh>\n");
   process.stdout.write("  jevrev-skill-install --destination <directory>\n\n");
   process.stdout.write("Options:\n");
   process.stdout.write("  --force       replace a different existing SKILL.md\n");

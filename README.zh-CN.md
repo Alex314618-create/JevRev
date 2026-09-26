@@ -39,7 +39,7 @@ Decision: winner -> integrate_winner
 ```bash
 git clone https://github.com/Alex314618-create/JevRev.git
 cd JevRev
-npm install
+npm ci
 npm run build
 npm run demo:workflow
 ```
@@ -84,9 +84,22 @@ jevrev long status --directory .jevrev/long --format json
 
 非交互终端默认只打印一条紧凑状态；需要持续采样时显式加 `--stream` 或 `--iterations N`。
 
-## 在 Codex 里使用
+## 安装和使用
 
-JevRev 的交互面就是命令行。Codex、Claude Code 或其他宿主 agent 只需在决策点调用 CLI，并把 JSON 文件作为上下游接口：
+JevRev 的交互面是命令行和 JSON。Codex、Claude Code、OpenCode 或其他宿主 agent，只要能运行 shell 命令，就可以在决策点调用 CLI。
+
+目前 JevRev 尚未发布到 npm 公共 registry。Windows、macOS 和 Linux 的源码安装、全局命令、API key 和本地模型说明见[安装指南](docs/INSTALL.zh-CN.md)。
+
+构建完成后，按使用的 agent 选择一个 skill 安装目标：
+
+```bash
+node scripts/install-skill.mjs --target codex   # Codex
+node scripts/install-skill.mjs --target claude  # Claude Code
+node scripts/install-skill.mjs --target opencode # OpenCode
+node scripts/install-skill.mjs --target agents   # 其他 Agent Skills 工具
+```
+
+JevRev 的上下游接口如下：
 
 ```text
 agent 写出 proposals.json
@@ -97,15 +110,7 @@ agent/适配器发送 JSONL 事件
         -> jevrev long -> 状态和提醒
 ```
 
-安装仓库里的 skill 可以让 Codex 知道这些调用约定：
-
-```bash
-npm install
-npm run build
-node scripts/install-skill.mjs --target codex
-```
-
-然后告诉宿主 agent：
+也可以直接告诉宿主 agent：
 
 ```text
 Use JevRev for this task. Propose materially different approaches, ask JevRev
@@ -170,6 +175,7 @@ node dist/cli.js sift --input examples/parser-speedup.json --provider semif `
 
 ## 文档
 
+- [安装与使用](docs/INSTALL.zh-CN.md) · [English installation guide](docs/INSTALL.md)
 - [工作流](docs/WORKFLOW.md)
 - [activation policy](docs/ACTIVATION.md)
 - [协议与 JSON 契约](docs/PROTOCOL.md)
@@ -181,7 +187,7 @@ node dist/cli.js sift --input examples/parser-speedup.json --provider semif `
 ## 本地开发
 
 ```bash
-npm install
+npm ci
 npm run check
 npm test
 npm run build
