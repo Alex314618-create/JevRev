@@ -4,7 +4,7 @@
   <img src=".github/assets/jevrev-banner.png" alt="JevRev 字标与插画" width="620" />
 </p>
 
-<p align="center"><strong>让 LLM 多想几条路，再把时间花在值得走的那条上。</strong></p>
+<p align="center"><strong>给 LLM 一个 Jev 做的合金脊柱</strong></p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a>
@@ -16,37 +16,110 @@
   <a href="LICENSE"><img alt="MIT 许可" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
-LLM 很适合发散：它能同时提出几种实现，写出代码，跑测试，再根据结果修改。问题是，很多任务真正贵的地方不在“写第一版”，而在于走错方向之后才发现已经花掉了一轮时间和 token。
+JevRev 是一个 LLM+Jev 的系统。正如进化了千年的动物把自己逼出了脊椎用于以极快的速度和极低的成本完成大量决策一样，JevRev 把 LLM 的思考深度高、效益好但是响应慢、成本高的特点与 Jev 的极快响应速度、极低输出成本的特点相结合，达成了对 workflow 非常好的优化效果。
 
-JevRev 把 Jev 放在 LLM 旁边，专门做决策。LLM 负责提出方案和执行，JevRev 负责在关键节点筛选、复核和提醒。它是 CLI 和 JSON 协议，不是另一个 coding agent，也不会接管你的 Codex 会话。
+这个工具主要有三个部分：**JevSift**，**JevLoop** 和 **JevLong**。
 
-## 先跑一个完整例子
+它会在一个任务开始的时候让 LLM 发散出去，像一个八爪鱼一样摊开——看看哪个触手能碰到正确而最合适的方案，然后裁剪掉有问题的和效果不合预期的触手，这就是 JevRev 中的 **JevSift**。而 **JevLoop** 可以让 agent 在 loop 中完成每轮次的工作后被审计、打分，根据效果继续进行下一轮。Jev 的参与大大提高了效率，也极大降低了成本，甚至最后成果惊人。我们会在接下来的文档中附上案例。**JevLong** 可以作为一个监视器，注意那些长时间、多轮次的任务有没有出现提示卡住、重复失败、方向漂移、工具调用异常和预算风险。
 
-仓库里的案例是一个 CSV 解析器提速任务。LLM 提出正则捷径和状态机两条路线。纸面排名更高的正则方案没有通过正确性检查，原本排第二的状态机反而成为最后的证据赢家：
+过程中，Jev 就是一个旁观的角色。它会给出决策、筛选和提醒，不会提出方案和执行——那是 LLM 干的活。它是 CLI 和 JSON 协议，不是另一个 coding agent，也不会接管你的会话。
 
-```text
-Paper favorite: regex-shortcut
-  correctness command: failed
-  result: rejected
 
-Evidence winner: indexed-state-machine
-  correctness command: passed
-Decision: winner -> integrate_winner
-```
+## 来吧，展示
 
-这不是预先写好的“正确答案”：实现、命令退出码、benchmark 样本和输出摘要都在本地真实运行。Jev 的回答为了让 demo 可重复而使用 replay 文件。
+接下来有几个示例，直观展示 JevRev 能带来多大的变化。
 
-```bash
-git clone https://github.com/Alex314618-create/JevRev.git
-cd JevRev
-npm ci
-npm run build
-npm run demo:workflow
-```
+### 1. Tidal City （这个请一定要看）
 
-想看细节，可以直接读[探针脚本](benchmarks/workflow-fixture/probe.mjs)、[demo 驱动](scripts/run-workflow-demo.mjs)和[决策测试](https://github.com/Alex314618-create/JevRev/blob/main/tests/workflow-decide.test.ts)。还有一个从零开始的 JSONL ingestion 案例，记录了错误捷径、三轮 Loop 和 Long 观察结果：[完整记录](benchmarks/real-jsonl-ingestion/README.md)。
+<details>
+<summary>点击展开案例：TidalCity 的实现</summary>
 
-## 三个部分
+使用相同的模型 ChatGPT-6-Sol-Ultra 运行同一套提示词以构建 TidalCity ，一个会被潮水淹没的城市模拟。以下是没有 Jev 干涉的 BenchMark 版本：
+
+<p align="center">
+  <img src=".github/assets/tidal-city/benchmark-01.jpg" alt="Tidal City benchmark 1" width="49%" />
+  <img src=".github/assets/tidal-city/benchmark-02.jpg" alt="Tidal City benchmark 2" width="49%" />
+</p>
+
+可以看见有一些简单的房屋、道路和一定程度潮水上涨之后的模拟。但是模型简陋、操控单一、道路和房屋是随机放置相连，没有逻辑的。
+
+以下是使用了 JevRev（包括 JevSift、JevLoop 和 JevLong）的成果：
+
+<p align="center">
+  <img src=".github/assets/tidal-city/jevrev-01.jpg" alt="Tidal City with JevRev 1" width="100%" />
+</p>
+<p align="center">
+  <img src=".github/assets/tidal-city/jevrev-02.jpg" alt="Tidal City with JevRev 2" width="49%" />
+  <img src=".github/assets/tidal-city/jevrev-03.jpg" alt="Tidal City with JevRev 3" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/assets/tidal-city/jevrev-04.jpg" alt="Tidal City with JevRev 4" width="49%" />
+  <img src=".github/assets/tidal-city/jevrev-05.jpg" alt="Tidal City with JevRev 5" width="49%" />
+</p>
+
+可以看到城市规模变大，很好地完成了材质的建设。城市内容丰富生动，有不同分区，甚至每一个建筑都有自己的名字。可以切换不同时间、可以切换不同视角，也可以选择漫游模式使用 wasd 在城市中漫游或者水中游泳。
+</details>
+
+### 2. JSONL 事件摄取
+
+<details>
+
+<summary>点击展开案例：25,000 条 JSONL 事件处理</summary>
+
+让一个纯 Node 20 的 JSONL 摄取器处理 25,000 条生产形状事件，同时满足：
+ - 坏行隔离；
+ - 保留首次出现顺序；
+ - 重复事件只输出一次；
+ - 吞吐目标至少达到保守 baseline 的 2 倍。
+
+ 输入约 2.3 MB，包含 184 条 malformed/schema-invalid 行和 258 个重复 ID。
+
+**JevSift做了什么：**
+
+六个方向进入筛选，JevSift 留下两个严格 survivor，另有一个 review：
+
+| 方案 | Sift 分数 | 结果 |
+| --- | ---: | --- |
+| `batch-index` | 0.9243 | 保留，进入真实 probe |
+| `regex-shortcut` | 0.9240 | 保留，进入真实 probe |
+| `state-scan` | 0.7965 | 预算截断 |
+| `baseline-parse` | 0.6100 | 执行价值低，拒绝 |
+| `worker-shards` | 0.6043 | review，未被默认为通过 |
+| `external-index` | 0.4931 | 执行价值低，拒绝 |
+
+两个 survivor 都执行了正确性检查和 7 次 benchmark。结果是：
+
+| 指标 | `regex-shortcut` | `batch-index` |
+| --- | ---: | ---: |
+| 正确性 | 失败，expected 184 / actual 65 | 通过 |
+| 平均吞吐（events/s） | 180,530.90 | 180,317.21 |
+| 样本标准差（n-1） | 8,567.37 | 10,486.05 |
+| Decide | rejected | `winner` |
+
+普通的未决策工作流会选 regex；它速度很漂亮，但无法处理全部 malformed 行。
+JevRev最后选择的 `batch-index`，不是因为Jev觉得它更快，
+而是它满足了任务契约。
+
+**JevLoop做了什么：**
+
+1. 第 1 轮：吞吐通过，但 correctness 失败，返回 `fix_regression`。
+2. 第 2 轮：新鲜 correctness 和维护性证据通过，返回 `verify`。
+3. 第 3 轮：同一 head 上重新提交全部标准和 protected surface，返回 `completed`。
+
+最终状态：`completed`，第 3 轮，记录墙钟 838 ms，replay provider accounting 为
+1,628 tokens。
+
+**JevLong做了什么：**
+
+- 首次接收 13 个事件；重复导入接收 0 个、识别 13 个 duplicate；
+- `long status`、多帧 `long watch` 和 `long loop-audit` 均执行；
+- 最终 sequence 为 14；
+- 报告 `failure_loop` 高等级告警和 `protocol` critical 告警；
+- Loop 是 completed，但 Long 的 `progress_index` 仍为 0。
+
+</details>
+
+## 对三个部分更详细的阐述
 
 <picture>
   <source media="(max-width: 600px)" srcset=".github/assets/jevrev-product-roles-mobile.svg">
@@ -57,9 +130,9 @@ npm run demo:workflow
 
 LLM 先写出几张真正不同的方案卡。JevSift 用 Jev 做窄问题判断，再由确定性的策略去重、过滤硬约束风险，并为留下的方案生成有预算和停止条件的 probe work order。
 
-Sift 的结果是“哪些值得试”，不是“哪个已经正确”。真正的代码、测试和 benchmark 仍由宿主 agent 执行。
+Sift 的作用是回答哪些方向值得你的token。真正的代码、测试和 benchmark 仍由宿主 agent 执行。
 
-如果任务是否值得开一轮 Sift 还说不准，可以先跑 shadow activation：
+如果说不准任务是否值得开一轮 Sift ，可以先跑 shadow activation：
 
 ```bash
 jevrev activation --input activation.json --format json
@@ -67,119 +140,209 @@ jevrev activation --input activation.json --format json
 
 它比较走错路线的预计代价和几次 bounded probe 的代价，输出稳定的 reason code。当前是 shadow-only：不会调用 Jev，不会替你启动或跳过 Sift。字段和后续评估计划见 [activation policy](docs/ACTIVATION.md)。
 
-### JevLoop：每轮复核一个成果
+### JevLoop：让每一轮的成果在证据里收敛
 
-Loop 面向一个正在演进的成果。agent 做完一轮后，用 recorder 记录命令、指标和产物，再把 round evidence 交给 Loop。Loop 先检查可验证的事实，再把剩下的窄问题交给 Jev，返回下一步：继续、修复、验证、重新规划、等待人工，或在所有标准都满足后完成。
+Agent 每轮推进工作，JevLoop 每轮检查结果。它读取 recorder 提交的命令、测试、指标与产物，先确认哪些事实已经发生，再让 Jev 判断当前成果离目标还差什么，输出下一步动作：`fix`、`verify`、`continue`、`replan` 或 `human`，直到目标真正满足。
 
-Loop 不启动 agent，也不替它改文件。`Probe`、`Evidence`、`Decide` 是这条工作流里的基础设施，不是额外的产品组件。
+Loop 只跟踪一个成果。agent 负责行动，Loop 负责复核，Jev 负责判断。它不接管会话，也不会给只是看起来不错的成果盖章；每一次完成，都必须由可重放的证据证明。
 
-### JevLong：观察长跑会话
+### JevLong：让长跑会话保持可见、可审计
 
-Long 从 JSONL 事件中观察一个长时间运行的 agent，提示卡住、重复失败、方向漂移、工具调用异常和预算风险。它只报告，不暗中重试、改方向或结束 agent。
+Long 持续读取 agent 写入的 JSONL 事件，记录会话进展，并识别卡住、重复失败、方向漂移、工具异常和预算风险。它只负责如实呈现和监测过程，把“发生了什么、是否仍在前进、风险在哪里”及时呈现出来。
 
 ```bash
 jevrev long watch --directory .jevrev/long
 jevrev long status --directory .jevrev/long --format json
 ```
 
-非交互终端默认只打印一条紧凑状态；需要持续采样时显式加 `--stream` 或 `--iterations N`。
+## 快速上手：接入任意 Agent
 
-## 安装和使用
+JevRev 通过 CLI、JSON 和 JSONL 与外部 agent 连接。Codex、Claude Code、OpenCode、CI 流程和自建 harness 都可以使用同一套协议；支持 skill 的宿主加载说明文件，其他宿主直接调用 CLI 即可。
 
-JevRev 的交互面是命令行和 JSON。Codex、Claude Code、OpenCode 或其他宿主 agent，只要能运行 shell 命令，就可以在决策点调用 CLI。
-
-目前 JevRev 尚未发布到 npm 公共 registry。Windows、macOS 和 Linux 的源码安装、全局命令、API key 和本地模型说明见[安装指南](docs/INSTALL.zh-CN.md)。
-
-构建完成后，按使用的 agent 选择一个 skill 安装目标：
+### 安装
 
 ```bash
-node scripts/install-skill.mjs --target codex   # Codex
-node scripts/install-skill.mjs --target claude  # Claude Code
-node scripts/install-skill.mjs --target opencode # OpenCode
-node scripts/install-skill.mjs --target agents   # 其他 Agent Skills 工具
+npm install
+npm run build
+node scripts/install-skill.mjs --target <codex|claude|agents|dsh>
 ```
 
-执行 `npm link` 后也可以使用 `jevrev-skill-install --target ...`；不做全局链接时，
-上面的 `node scripts/install-skill.mjs` 就是等价入口。若宿主会缓存 skill，
-安装后重启宿主或刷新 skill 列表。
+根据宿主选择一个 `target`；OpenCode 或其他自定义宿主使用
+`--destination <host-skill-directory>`。
 
-JevRev 的上下游接口如下：
+给 Agent 的 prompt 示例：
 
 ```text
-agent 写出 proposals.json
-        -> jevrev sift -> campaign.json 和 probe work orders
-agent 执行 probe，记录 evidence.json
-        -> jevrev decide 或 jevrev loop audit -> 下一步
-agent/适配器发送 JSONL 事件
-        -> jevrev long -> 状态和提醒
+请用 JevRev：完成这个任务并运行 Sift，只执行入选方案，记录证据，每轮交给 Loop，长任务接入 Long。
 ```
 
-也可以直接告诉宿主 agent：
-
-```text
-Use JevRev for this task. Propose materially different approaches, ask JevRev
-to sift them, run only the bounded probes, record the evidence, and let JevRev
-audit the next round before continuing.
-```
-
-人仍然在关键位置做决定：定目标和约束、选择 provider、批准恢复或中止 Loop，以及决定是否整合最终成果。JevRev 只返回可检查的工作单、事实和 typed next action，不会在后台继续工作。
-
-## 常用命令
-
-| 命令 | 用途 |
-| --- | --- |
-| `jevrev activation` | 判断当前任务是否值得开 Sift（shadow-only） |
-| `jevrev sift` | 从候选方案中选出值得 probe 的路线 |
-| `jevrev loop` | 复核一个成果的每一轮进展 |
-| `jevrev long` | 观察一个长跑会话的状态 |
-| `jevrev evidence` / `jevrev decide` | 记录事实并对 probe 结果做最终裁定 |
-
-从源码运行时，把 `jevrev` 换成 `node dist/cli.js`：
+马上运行完整示例：
 
 ```bash
-node dist/cli.js sift --input examples/parser-speedup.json --replay examples/parser-jev-response.json
+npm run demo:workflow
 ```
+
+## TUI：人的驾驶舱
+
+JevRev 的 CLI 为 agent 提供命令和 JSON 协议，TUI 让人查看项目中各条工作流的实时状态。
+
+直接运行 `jevrev` 可以打开驾驶舱。在交互终端中，以下命令成功完成后也会自动打开 TUI，并聚焦刚刚激活的工作流：
+
+```text
+jevrev run
+jevrev rank
+jevrev sift
+jevrev decide
+jevrev loop create
+jevrev long create
+```
+
+整个过程如下：
+
+```text
+Agent 调用 JevRev
+        ↓
+组件写入结果、事件或审计记录
+        ↓
+JevRev 更新本地会话摘要
+        ↓
+TUI 打开并持续刷新
+        ↓
+人查看进度、证据和风险
+```
+
+`loop next`、`loop audit`、`long ingest` 和 `long status` 会更新会话状态，不会反复抢占终端。交互式 `long watch` 会打开驾驶舱。
+
+TUI 包含三个页面：
+
+### Sessions
+
+显示项目中的 Sift、Loop 和 Long 会话。
+
+每个会话包含：
+
+- 任务名称和目标；
+- 当前组件和运行状态；
+- 会话已经持续的时间；
+- 最近一次状态摘要；
+- 已记录的 agent 工作时间；
+- 当前进行项、待关注项和已验证项的数量。
+
+无法可靠获取 agent 工作时间时，界面会显示 `not recorded`。
+
+### Kanban
+
+当前会话被整理成三个区域：
+
+```text
+In Progress       正在推进
+Needs Attention   需要人关注
+Verified          已有可信证据支持
+```
+
+不同组件会写入不同信息：
+
+- **Sift**：保留候选、待复核候选、淘汰结果和待执行的 probe work order；
+- **Loop**：当前轮次、运行状态、累计 token、累计工作时间、连续停滞轮次、最近审计结果和下一步原因；
+- **Long**：事件数量、工具调用、provider token、未完成 milestone、已通过 milestone 和开放告警。
+
+Sift 选出的候选仍会留在 `In Progress`。推荐 winner 在完成整合并取得证据前也不会进入 `Verified`。
+
+Long 的 stall、failure、drift 和 budget 风险通过开放告警进入 `Needs Attention`。
+
+### Config
+
+配置当前项目的 TUI 行为：
+
+- JevRev 组件完成后是否自动打开 TUI；
+- 状态刷新间隔；
+- 是否启用终端颜色。
+
+配置保存在：
+
+```text
+.jevrev/ui/config.json
+```
+
+可以使用 `jevrev --no-tui <component> ...` 临时禁止自动打开，也可以设置：
+
+```text
+JEVREV_NO_TUI=1
+```
+
+这只会关闭自动打开，组件仍会正常记录会话。
+
+常用操作：
+
+```text
+← / →       切换 Sessions、Kanban、Config
+↑ / ↓       选择会话或配置项
+Enter       打开所选会话的 Kanban
+c           跳转到 Config
+Space       切换选中的布尔配置
++ / -       调整刷新间隔
+s           保存配置
+q / Ctrl-C  退出并恢复原终端
+```
+
+TUI 当前负责观察、导航和项目配置。恢复、暂停、批准、停止和整合仍通过明确的 CLI 命令完成。
+
+`.jevrev/ui/` 保存用于展示的会话摘要。Sift campaign、Loop 哈希链日志和 Long 事件日志保存完整事实记录，并继续作为判断依据。
+
+没有交互终端时，JevRev 保持普通的 human/JSON 输出，不会发送 TUI 控制字符。单独运行 `jevrev` 时，如果当前环境缺少交互终端，CLI 会直接报告该条件。
 
 ## 接入 Jev 或本地模型
 
-同一套协议可以使用云端 Jev、本地 SemIf，或者 replay 文件。凭据放在环境变量里，不要写进命令参数、campaign 或 evidence：
+Sift、Decide 和 Loop audit 共用同一套 provider 接口，可以连接云端 Jev、本地 SemIf，或使用 replay 文件离线运行。凭据只放在环境变量中，不要写进命令参数、campaign 或 evidence。
+
+### 云端 Jev
+
+macOS / Linux：
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-node dist/cli.js sift --input examples/parser-speedup.json --provider jev \
-  --output campaign.json --summary
+
+node dist/cli.js sift \
+  --input examples/parser-speedup.json \
+  --provider jev \
+  --output campaign.json
 ```
 
-Windows 本地 SemIf：
+Windows PowerShell：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-node dist/cli.js sift --input examples/parser-speedup.json --provider semif `
-  --output campaign.json --summary
+$env:JEVREV_JEV_API_KEY = "..."
+
+node dist/cli.js sift `
+  --input examples/parser-speedup.json `
+  --provider jev `
+  --output campaign.json
 ```
 
-没有 API key 时可以直接使用仓库中的 replay。具体的本地模型设置见 [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)。
+自定义 Jev API 地址时，可设置 `JEVREV_JEV_URL`，或传入
+`--jev-url <api-root>`。CLI 会向该地址的 `/v1/systemone` 发送请求。
 
-## 同一份需求，两种结果
+### 本地 SemIf
 
-仓库还提供了一个非代码案例：同一份页面需求，一份直接出稿，一份先经过 JevRev 路线筛选并留下验证记录。
+Windows：
 
-<table>
-  <tr>
-    <th width="50%">常规初版</th>
-    <th width="50%">JevRev 路线</th>
-  </tr>
-  <tr>
-    <td><img src=".github/assets/one-shot-showcase/direct-hero.png" alt="常规初版页面" /></td>
-    <td><img src=".github/assets/one-shot-showcase/routed-hero.png" alt="JevRev 路线页面" /></td>
-  </tr>
-</table>
+```powershell
+powershell -ExecutionPolicy Bypass `
+  -File scripts/start-semif.ps1 -Background
 
-这里不做“视觉分数更高”的空泛承诺。差异在于：选择路线时用的假设、探针和证据都被保留下来，最后的产物因此更容易复查。[案例说明](benchmarks/one-shot-showcase/README.md)和[验证记录](benchmarks/one-shot-showcase/VALIDATION.md)都在仓库里。
+node dist/cli.js sift `
+  --input examples/parser-speedup.json `
+  --provider semif `
+  --output campaign.json
+```
+
+本地模型的启动、检查和停止方式见
+[`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)。
+
+
 
 ## 文档
 
-- [安装与使用](docs/INSTALL.zh-CN.md) · [English installation guide](docs/INSTALL.md)
 - [工作流](docs/WORKFLOW.md)
 - [activation policy](docs/ACTIVATION.md)
 - [协议与 JSON 契约](docs/PROTOCOL.md)
@@ -188,19 +351,6 @@ node dist/cli.js sift --input examples/parser-speedup.json --provider semif `
 - [JevLong 设计](docs/JEVLONG_DESIGN.md)
 - [验收记录](docs/ACCEPTANCE.md)
 
-## 本地开发
-
-```bash
-npm ci
-npm run check
-npm test
-npm run build
-npm run demo:all
-npm run demo:workflow
-npm run demo:loop
-npm run demo:engineering
-```
-
-需要 Node.js 20 或更高版本。JevRev 使用 MIT 许可。
+JevRev 使用 MIT 许可。
 
 [MIT](LICENSE)
