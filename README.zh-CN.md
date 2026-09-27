@@ -16,6 +16,10 @@
   <a href="LICENSE"><img alt="MIT 许可" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
+<p align="center">
+  快速跳转：<a href="#来吧展示">案例</a> · <a href="#对三个部分更详细的阐述">Sift / Loop / Long</a> · <a href="#快速上手接入任意-agent">接入 Agent</a> · <a href="#tui人的驾驶舱">TUI</a> · <a href="#接入-jev-或本地模型">模型</a> · <a href="#文档">文档</a>
+</p>
+
 JevRev 是一个 LLM+Jev 的系统。正如进化了千年的动物把自己逼出了脊椎用于以极快的速度和极低的成本完成大量决策一样，JevRev 把 LLM 的思考深度高、效益好但是响应慢、成本高的特点与 Jev 的极快响应速度、极低输出成本的特点相结合，达成了对 workflow 非常好的优化效果。
 
 这个工具主要有三个部分：**JevSift**，**JevLoop** 和 **JevLong**。
@@ -184,112 +188,37 @@ npm run demo:workflow
 
 ## TUI：人的驾驶舱
 
-JevRev 的 CLI 为 agent 提供命令和 JSON 协议，TUI 让人查看项目中各条工作流的实时状态。
+在交互终端直接运行 `jevrev` 就会打开驾驶舱，不需要先创建 Long。Sessions
+同时显示 JevRev 组件会话，以及通过命令注册的 Codex、Claude Code、OpenCode
+等宿主会话：
 
-直接运行 `jevrev` 可以打开驾驶舱。在交互终端中，以下命令成功完成后也会自动打开 TUI，并聚焦刚刚激活的工作流：
-
-```text
-jevrev run
-jevrev rank
-jevrev sift
-jevrev decide
-jevrev loop create
-jevrev long create
+```bash
+jevrev session register --host codex --session-id <id> --title "..." --goal "..."
+jevrev session list
 ```
 
-整个过程如下：
+Claude Code 使用 `--host claude`；也支持 OpenCode 和自定义宿主。注册只保存会话
+元数据，不读取宿主的私有 transcript。
 
-```text
-Agent 调用 JevRev
-        ↓
-组件写入结果、事件或审计记录
-        ↓
-JevRev 更新本地会话摘要
-        ↓
-TUI 打开并持续刷新
-        ↓
-人查看进度、证据和风险
+选择会话后进入 **Kanban / Monitor**。页面顶部的 Loop 和 Long 开关会保存到
+该会话，并显示 observer store 是否就绪。开关不会启动观察器或接管宿主 agent。
+
+| 页面 | 内容 |
+| --- | --- |
+| Sessions | 已注册的宿主会话和 JevRev 组件会话 |
+| Kanban / Monitor | 工作进展、证据、风险及 Loop / Long 开关 |
+| Config | 自动打开、刷新间隔和终端颜色 |
+
+使用 ↑ / ↓ 选择会话、Enter 打开；使用 `l` / `o` 选择监测项，再按 `Space` 切换。
+也可以使用 CLI 修改开关：
+
+```bash
+jevrev session monitor --id <jevrev-session-id> --loop on --long on
 ```
 
-`loop next`、`loop audit`、`long ingest` 和 `long status` 会更新会话状态，不会反复抢占终端。交互式 `long watch` 会打开驾驶舱。
-
-TUI 包含三个页面：
-
-### Sessions
-
-显示项目中的 Sift、Loop 和 Long 会话。
-
-每个会话包含：
-
-- 任务名称和目标；
-- 当前组件和运行状态；
-- 会话已经持续的时间；
-- 最近一次状态摘要；
-- 已记录的 agent 工作时间；
-- 当前进行项、待关注项和已验证项的数量。
-
-无法可靠获取 agent 工作时间时，界面会显示 `not recorded`。
-
-### Kanban
-
-当前会话被整理成三个区域：
-
-```text
-In Progress       正在推进
-Needs Attention   需要人关注
-Verified          已有可信证据支持
-```
-
-不同组件会写入不同信息：
-
-- **Sift**：保留候选、待复核候选、淘汰结果和待执行的 probe work order；
-- **Loop**：当前轮次、运行状态、累计 token、累计工作时间、连续停滞轮次、最近审计结果和下一步原因；
-- **Long**：事件数量、工具调用、provider token、未完成 milestone、已通过 milestone 和开放告警。
-
-Sift 选出的候选仍会留在 `In Progress`。推荐 winner 在完成整合并取得证据前也不会进入 `Verified`。
-
-Long 的 stall、failure、drift 和 budget 风险通过开放告警进入 `Needs Attention`。
-
-### Config
-
-配置当前项目的 TUI 行为：
-
-- JevRev 组件完成后是否自动打开 TUI；
-- 状态刷新间隔；
-- 是否启用终端颜色。
-
-配置保存在：
-
-```text
-.jevrev/ui/config.json
-```
-
-可以使用 `jevrev --no-tui <component> ...` 临时禁止自动打开，也可以设置：
-
-```text
-JEVREV_NO_TUI=1
-```
-
-这只会关闭自动打开，组件仍会正常记录会话。
-
-常用操作：
-
-```text
-← / →       切换 Sessions、Kanban、Config
-↑ / ↓       选择会话或配置项
-Enter       打开所选会话的 Kanban
-c           跳转到 Config
-Space       切换选中的布尔配置
-+ / -       调整刷新间隔
-s           保存配置
-q / Ctrl-C  退出并恢复原终端
-```
-
-TUI 当前负责观察、导航和项目配置。恢复、暂停、批准、停止和整合仍通过明确的 CLI 命令完成。
-
-`.jevrev/ui/` 保存用于展示的会话摘要。Sift campaign、Loop 哈希链日志和 Long 事件日志保存完整事实记录，并继续作为判断依据。
-
-没有交互终端时，JevRev 保持普通的 human/JSON 输出，不会发送 TUI 控制字符。单独运行 `jevrev` 时，如果当前环境缺少交互终端，CLI 会直接报告该条件。
+组件命令成功后可自动打开驾驶舱并聚焦刚更新的会话。使用
+`jevrev --no-tui ...` 或设置 `JEVREV_NO_TUI=1` 可关闭自动打开。没有交互终端时，
+JevRev 保持普通 human/JSON 输出，不发送 TUI 控制字符。
 
 ## 接入 Jev 或本地模型
 
@@ -343,6 +272,7 @@ node dist/cli.js sift `
 
 ## 文档
 
+- [TUI 设计](docs/TUI_DESIGN.md)
 - [工作流](docs/WORKFLOW.md)
 - [activation policy](docs/ACTIVATION.md)
 - [协议与 JSON 契约](docs/PROTOCOL.md)

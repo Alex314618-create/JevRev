@@ -16,6 +16,10 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
+<p align="center">
+  Jump to: <a href="#see-it-in-action">Examples</a> · <a href="#the-three-parts-in-detail">Sift / Loop / Long</a> · <a href="#quick-start-connect-any-agent">Connect an agent</a> · <a href="#tui-the-human-cockpit">TUI</a> · <a href="#connect-jev-or-a-local-model">Providers</a> · <a href="#read-next">Docs</a>
+</p>
+
 JevRev is an LLM + Jev system. Evolution gave animals a spine so they could make many decisions quickly and cheaply. JevRev applies the same split to a workflow: the LLM brings depth and range, while Jev brings very fast, low-cost decisions. Together they make the workflow more efficient.
 
 The tool has three parts: **JevSift**, **JevLoop**, and **JevLong**.
@@ -180,112 +184,31 @@ npm run demo:workflow
 
 ## TUI: the human cockpit
 
-The CLI gives the agent commands and a JSON protocol. The TUI gives a human a live view of every workflow in the project.
+Run `jevrev` in an interactive terminal to open the cockpit; a Long store is not
+required. Sessions lists JevRev component sessions and host sessions registered
+from Codex, Claude Code, OpenCode, or another agent:
 
-Running `jevrev` directly opens the cockpit. In an interactive terminal, these commands also open it after they complete successfully and focus the workflow just activated:
-
-```text
-jevrev run
-jevrev rank
-jevrev sift
-jevrev decide
-jevrev loop create
-jevrev long create
+```bash
+jevrev session register --host codex --session-id <id> --title "..." --goal "..."
+jevrev session list
 ```
 
-The flow looks like this:
+Registration stores session metadata, not private host transcripts. Select a
+session to open its **Kanban / Monitor** page. The Loop and Long switches persist
+for that session and show whether an observer store is available; they do not
+start an observer or steer the host agent.
 
-```text
-Agent calls JevRev
-        ↓
-The component writes results, events, or audit records
-        ↓
-JevRev updates the local session summary
-        ↓
-The TUI opens and keeps refreshing
-        ↓
-The human sees progress, evidence, and risk
-```
+| Page | What it shows |
+| --- | --- |
+| Sessions | Registered host sessions and JevRev component sessions |
+| Kanban / Monitor | Work, evidence, risks, and the Loop / Long switches |
+| Config | Auto-open, refresh interval, and terminal colors |
 
-`loop next`, `loop audit`, `long ingest`, and `long status` update the session state without repeatedly taking over the terminal. Interactive `long watch` opens the cockpit.
-
-The TUI has three pages:
-
-### Sessions
-
-Shows the Sift, Loop, and Long sessions in the project.
-
-Each session includes:
-
-- task name and goal;
-- current component and run state;
-- how long the session has been running;
-- the latest status summary;
-- recorded agent work time;
-- counts for in-progress, attention-needed, and verified items.
-
-When agent work time cannot be collected reliably, the interface shows `not recorded`.
-
-### Kanban
-
-The current session is arranged in three areas:
-
-```text
-In Progress       work underway
-Needs Attention   needs a human look
-Verified          backed by trusted evidence
-```
-
-Each component writes its own information:
-
-- **Sift**: kept candidates, review candidates, rejected paths, and pending probe work orders;
-- **Loop**: current round, run state, total tokens, total work time, consecutive stalled rounds, latest audit result, and the reason for the next action;
-- **Long**: event count, tool calls, provider tokens, pending milestones, passed milestones, and open alerts.
-
-Candidates selected by Sift stay in `In Progress`. A recommended winner stays out of `Verified` until it is integrated and backed by evidence.
-
-Long's stall, failure, drift, and budget risks appear as open alerts in `Needs Attention`.
-
-### Config
-
-Configure the TUI for the current project:
-
-- whether a JevRev component opens the TUI when it finishes;
-- the refresh interval;
-- terminal colors.
-
-Configuration is stored at:
-
-```text
-.jevrev/ui/config.json
-```
-
-Use `jevrev --no-tui <component> ...` to suppress the automatic open for one command, or set:
-
-```text
-JEVREV_NO_TUI=1
-```
-
-This only disables the automatic open. Components continue to record the session.
-
-Common controls:
-
-```text
-Left / Right  switch between Sessions, Kanban, and Config
-Up / Down     select a session or setting
-Enter         open the selected session's Kanban
-c             jump to Config
-Space         toggle the selected boolean setting
-+ / -         adjust the refresh interval
-s             save the configuration
-q / Ctrl-C    exit and restore the terminal
-```
-
-The TUI handles observation, navigation, and project settings. Resume, pause, approve, stop, and integrate actions still use explicit CLI commands.
-
-`.jevrev/ui/` stores the session summaries used for display. Sift campaigns, Loop hash-chain logs, and Long event logs keep the full facts and remain the source for decisions.
-
-Without an interactive terminal, JevRev keeps the normal human/JSON output and sends no TUI control characters. Running `jevrev` without an interactive terminal reports that condition directly.
+Use Up / Down to select a session, Enter to open it, and `l` / `o` plus `Space`
+to change a monitor switch. Successful component commands can open the cockpit
+focused on the updated session. Use `jevrev --no-tui ...` or `JEVREV_NO_TUI=1`
+to suppress that automatic open. Without an interactive terminal, JevRev keeps
+normal human/JSON output and emits no TUI control sequences.
 
 ## Connect Jev or a local model
 
@@ -336,6 +259,7 @@ See [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) for starting, checking, and sto
 
 ## Docs
 
+- [Project cockpit design](docs/TUI_DESIGN.md)
 - [Workflow](docs/WORKFLOW.md)
 - [Activation policy](docs/ACTIVATION.md)
 - [Protocol and JSON contracts](docs/PROTOCOL.md)

@@ -120,11 +120,20 @@ describe("JevRev TUI shell", () => {
     }
     expect(output.output).toContain("PREVIEW");
     input.emit("data", "\u001b[C");
-    await new Promise((resolve) => setTimeout(resolve, 75));
+    for (let attempt = 0; attempt < 100 && !output.output.includes("MONITOR / KANBAN"); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(output.output).toContain("MONITOR / KANBAN");
     input.emit("data", "\u001b[C");
-    await new Promise((resolve) => setTimeout(resolve, 75));
+    for (let attempt = 0; attempt < 100 && !output.output.includes("CONFIG"); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(output.output).toContain("CONFIG");
     input.emit("data", " ");
-    await new Promise((resolve) => setTimeout(resolve, 75));
+    for (let attempt = 0; attempt < 100 && !output.output.includes("Open TUI after a JevRev component starts   Off"); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(output.output).toContain("Open TUI after a JevRev component starts   Off");
     input.emit("data", "q");
     await done;
     const plain = output.output.replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "");
