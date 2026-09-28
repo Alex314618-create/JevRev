@@ -54,13 +54,18 @@ export interface ConfigPathOptions {
   path?: string;
 }
 
+function normalizeExplicitPath(value: string, os: NodeJS.Platform): string {
+  if (os === "win32") return win32.isAbsolute(value) ? win32.normalize(value) : win32.resolve(value);
+  return posix.isAbsolute(value) ? posix.normalize(value) : resolve(value);
+}
+
 export function configPath(options: ConfigPathOptions = {}): string {
-  if (options.path !== undefined && options.path.trim().length > 0) return resolve(options.path);
+  const os = options.platformName ?? platform();
+  if (options.path !== undefined && options.path.trim().length > 0) return normalizeExplicitPath(options.path, os);
   const environment = options.env ?? process.env;
   const explicit = environment.JEVREV_CONFIG_PATH?.trim();
-  if (explicit !== undefined && explicit.length > 0) return resolve(explicit);
+  if (explicit !== undefined && explicit.length > 0) return normalizeExplicitPath(explicit, os);
   const home = options.home ?? homedir();
-  const os = options.platformName ?? platform();
   if (os === "win32") return win32.join(environment.APPDATA?.trim() || win32.join(home, "AppData", "Roaming"), "jevrev", "config.json");
   if (os === "darwin") return posix.join(home, "Library", "Application Support", "jevrev", "config.json");
   return posix.join(environment.XDG_CONFIG_HOME?.trim() || posix.join(home, ".config"), "jevrev", "config.json");
