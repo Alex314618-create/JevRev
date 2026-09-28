@@ -88,7 +88,17 @@ export async function writeEvidenceBundle(path: string, value: EvidenceBundle): 
   const temporary = `${path}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporary, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
-    await rename(temporary, path);
+    try {
+      await rename(temporary, path);
+    } catch (error) {
+      // Windows does not replace an existing file with rename. The caller holds
+      // the evidence lock, so removing the old snapshot here is safe.
+      if ((error as NodeJS.ErrnoException).code !== "EPERM" && (error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      await unlink(path).catch((unlinkError) => {
+        if ((unlinkError as NodeJS.ErrnoException).code !== "ENOENT") throw unlinkError;
+      });
+      await rename(temporary, path);
+    }
   } catch (error) {
     await unlink(temporary).catch(() => undefined);
     throw new InputError(`Could not update evidence bundle: ${path}`, { cause: error });

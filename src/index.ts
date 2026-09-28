@@ -36,3 +36,5 @@ export * from "./long/bridge.js";
 export * from "./tui/app.js";
 export * from "./tui/store.js";
 export * from "./tui/sessions.js";
+export * from "./config.js";
+export * from "./tui/setup.js";
