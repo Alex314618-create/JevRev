@@ -7,7 +7,7 @@
 <p align="center"><strong>An alloy spine for your LLM, built with Jev.</strong></p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a>
+  <a href="README.md">English</a> · <a href="docs/README.zh-CN.md">简体中文</a> · <a href="docs/README.ja.md">日本語</a>
 </p>
 
 <p align="center">

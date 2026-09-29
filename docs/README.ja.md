@@ -1,19 +1,19 @@
 # JevRev
 
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRevのロゴとイラスト" width="620" />
+  <img src="../.github/assets/jevrev-banner.png" alt="JevRevのロゴとイラスト" width="620" />
 </p>
 
 <p align="center"><strong>LLMに、Jevで鍛えた合金の背骨を。</strong></p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a>
+  <a href="../README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="最新リリース" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square&amp;color=555555&amp;labelColor=333333" /></a>
-  <a href="package.json"><img alt="Node.js 20以上が必要" src="https://img.shields.io/badge/Node.js-%3E%3D20-555555?style=flat-square&amp;labelColor=333333" /></a>
-  <a href="LICENSE"><img alt="MITライセンス" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
+  <a href="../package.json"><img alt="Node.js 20以上が必要" src="https://img.shields.io/badge/Node.js-%3E%3D20-555555?style=flat-square&amp;labelColor=333333" /></a>
+  <a href="../LICENSE"><img alt="MITライセンス" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
 <p align="center">
@@ -40,8 +40,8 @@ JevRevが実際に何を変えるのか、いくつかの例で見ていきま�
 同じモデルChatGPT-6-Sol-Ultraに同じプロンプトを与え、潮の満ち引きで浸水する都市シミュレーションTidalCityを作りました。こちらはJevを介入させないbenchmark版です。
 
 <p align="center">
-  <img src=".github/assets/tidal-city/benchmark-01.jpg" alt="Tidal City benchmark 1" width="49%" />
-  <img src=".github/assets/tidal-city/benchmark-02.jpg" alt="Tidal City benchmark 2" width="49%" />
+  <img src="../.github/assets/tidal-city/benchmark-01.jpg" alt="Tidal City benchmark 1" width="49%" />
+  <img src="../.github/assets/tidal-city/benchmark-02.jpg" alt="Tidal City benchmark 2" width="49%" />
 </p>
 
 いくつかの簡単な建物と道路、基本的な水位上昇のシミュレーションはあります。ただしモデルは粗く、操作は限られています。道路と建物も、構造のないばらばらのパーツとして配置されています。
@@ -49,15 +49,15 @@ JevRevが実際に何を変えるのか、いくつかの例で見ていきま�
 こちらはJevSift、JevLoop、JevLongを含むJevRevで作った結果です。
 
 <p align="center">
-  <img src=".github/assets/tidal-city/jevrev-01.jpg" alt="Tidal City with JevRev 1" width="100%" />
+  <img src="../.github/assets/tidal-city/jevrev-01.jpg" alt="Tidal City with JevRev 1" width="100%" />
 </p>
 <p align="center">
-  <img src=".github/assets/tidal-city/jevrev-02.jpg" alt="Tidal City with JevRev 2" width="49%" />
-  <img src=".github/assets/tidal-city/jevrev-03.jpg" alt="Tidal City with JevRev 3" width="49%" />
+  <img src="../.github/assets/tidal-city/jevrev-02.jpg" alt="Tidal City with JevRev 2" width="49%" />
+  <img src="../.github/assets/tidal-city/jevrev-03.jpg" alt="Tidal City with JevRev 3" width="49%" />
 </p>
 <p align="center">
-  <img src=".github/assets/tidal-city/jevrev-04.jpg" alt="Tidal City with JevRev 4" width="49%" />
-  <img src=".github/assets/tidal-city/jevrev-05.jpg" alt="Tidal City with JevRev 5" width="49%" />
+  <img src="../.github/assets/tidal-city/jevrev-04.jpg" alt="Tidal City with JevRev 4" width="49%" />
+  <img src="../.github/assets/tidal-city/jevrev-05.jpg" alt="Tidal City with JevRev 5" width="49%" />
 </p>
 
 都市はより大きくなり、環境全体も大幅に作り込まれています。複数の地区があり、ほぼすべての建物に名前が付いています。時間帯を変え、カメラを切り替え、WASDで街を歩いたり水中を泳いだりできます。
@@ -123,8 +123,8 @@ one-shot workflowならregexを選びます。机上では速いものの、malf
 ## 3つの構成要素
 
 <picture>
-  <source media="(max-width: 600px)" srcset=".github/assets/jevrev-product-roles-mobile.svg">
-  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSiftが経路を選び、JevLoopが1つの成果を確認し、JevLongが長時間セッションを監視する" />
+  <source media="(max-width: 600px)" srcset="../.github/assets/jevrev-product-roles-mobile.svg">
+  <img src="../.github/assets/jevrev-product-roles.svg" alt="JevSiftが経路を選び、JevLoopが1つの成果を確認し、JevLongが長時間セッションを監視する" />
 </picture>
 
 ### JevSift：まず何を試すか決める
@@ -139,7 +139,7 @@ Siftが答えるのは1つの問いです。どの方向にtoken budgetを使う
 jevrev activation --input activation.json --format json
 ```
 
-間違った方向へ進んだ場合の予想コストと、いくつかのbounded probeのコストを比較し、安定したreason codeを返します。現在はshadow modeで動作します。Jevを呼び出したり、Siftを代わりに開始・スキップしたりはしません。フィールドと今後の評価計画は[activation policy](docs/ACTIVATION.md)を参照してください。
+間違った方向へ進んだ場合の予想コストと、いくつかのbounded probeのコストを比較し、安定したreason codeを返します。現在はshadow modeで動作します。Jevを呼び出したり、Siftを代わりに開始・スキップしたりはしません。フィールドと今後の評価計画は[activation policy](ACTIVATION.md)を参照してください。
 
 ### JevLoop：各ラウンドをevidenceに収束させる
 
@@ -247,19 +247,19 @@ node dist/cli.js sift `
   --output campaign.json
 ```
 
-ローカルモデルの起動、確認、停止については[`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)を参照してください。
+ローカルモデルの起動、確認、停止については[`SEMIF_LOCAL.md`](SEMIF_LOCAL.md)を参照してください。
 
 ## ドキュメント
 
-- [プロジェクトコックピットの設計](docs/TUI_DESIGN.md)
-- [ワークフロー](docs/WORKFLOW.md)
-- [Activation policy](docs/ACTIVATION.md)
-- [プロトコルとJSON契約](docs/PROTOCOL.md)
-- [権限モデル](docs/AUTHORITY.md)
-- [JevLoopの設計](docs/JEVLOOP_DESIGN.md)
-- [JevLongの設計](docs/JEVLONG_DESIGN.md)
-- [受け入れ記録](docs/ACCEPTANCE.md)
+- [プロジェクトコックピットの設計](TUI_DESIGN.md)
+- [ワークフロー](WORKFLOW.md)
+- [Activation policy](ACTIVATION.md)
+- [プロトコルとJSON契約](PROTOCOL.md)
+- [権限モデル](AUTHORITY.md)
+- [JevLoopの設計](JEVLOOP_DESIGN.md)
+- [JevLongの設計](JEVLONG_DESIGN.md)
+- [受け入れ記録](ACCEPTANCE.md)
 
 JevRevはMITライセンスで公開されています。
 
-[MIT](LICENSE)
+[MIT](../LICENSE)
