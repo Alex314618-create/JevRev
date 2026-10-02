@@ -72,8 +72,11 @@ jevrev sift --input proposals.json --provider jev --output campaign.json --summa
 
 ## 配置云端 Jev
 
-在当前 shell 设置 `JEVREV_JEV_API_KEY`。不要把 key 放进 CLI 参数、方案文件、
-证据文件或版本控制。
+首次交互使用可以通过表单把 provider 配置及遮蔽输入的 key 保存到用户配置文件。
+保存的 key 是明文。系统路径、优先级、跳过方式及重置方法见[配置说明](CONFIGURATION.md)。
+
+仅使用环境变量时，在当前 shell 设置 `JEVREV_JEV_API_KEY`，并在命令前加
+`--no-tui` 跳过表单。不要把 key 放进 CLI 参数、方案文件、证据文件或版本控制。
 
 PowerShell：
 

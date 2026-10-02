@@ -212,7 +212,27 @@ normal human/JSON output and emits no TUI control sequences.
 
 ## Connect Jev or a local model
 
-Sift, Decide, and Loop audit use the same provider interface. You can connect to hosted Jev, local SemIf, or a replay file for offline runs. Keep credentials in environment variables; do not put them in command arguments, campaign files, or evidence.
+Sift, Decide, and Loop audit use the same provider interface. You can connect to hosted Jev, local SemIf, or a replay file for offline runs. Keep credentials out of command arguments, campaign files, evidence, and source control.
+
+### First-run setup
+
+In an interactive terminal, `jevrev` and provider-related commands show a setup
+form when the selected hosted provider has no key. Choose `jev`, `local`, or
+`semif`, enter the endpoint and (for Jev) a masked API key, then press Enter to
+save. The key is saved as **plaintext** in your user configuration, not encrypted:
+
+- Windows: `%APPDATA%/jevrev/config.json` (falls back to `~/AppData/Roaming`).
+- macOS: `~/Library/Application Support/jevrev/config.json`.
+- Linux: `$XDG_CONFIG_HOME/jevrev/config.json` (falls back to `~/.config`).
+
+`JEVREV_CONFIG_PATH` selects another file. Non-empty environment settings override
+saved values; explicit CLI options override endpoint/provider defaults. For an
+environment-only or replay workflow, use `jevrev --no-tui ...` or
+`JEVREV_NO_TUI=1` to skip the form. Piped commands and `--help` / `--version` do
+not prompt. Esc closes the form without saving, then the requested command
+continues and may fail if it still needs a key. See [configuration and reset
+instructions](docs/CONFIGURATION.md); the hosted examples below use environment
+variables without saving a key.
 
 ### Hosted Jev
 

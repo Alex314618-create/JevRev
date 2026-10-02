@@ -222,7 +222,24 @@ JevRev 保持普通 human/JSON 输出，不发送 TUI 控制字符。
 
 ## 接入 Jev 或本地模型
 
-Sift、Decide 和 Loop audit 共用同一套 provider 接口，可以连接云端 Jev、本地 SemIf，或使用 replay 文件离线运行。凭据只放在环境变量中，不要写进命令参数、campaign 或 evidence。
+Sift、Decide 和 Loop audit 共用同一套 provider 接口，可以连接云端 Jev、本地 SemIf，或使用 replay 文件离线运行。不要把凭据写进命令参数、campaign、evidence 或版本控制。
+
+### 首次配置
+
+在交互终端中运行 `jevrev` 或 provider 相关命令时，如果当前云端 provider
+尚无 key，会出现配置表单。选择 `jev`、`local` 或 `semif`，填写地址及 Jev
+所需的 key，按 Enter 保存。输入时 key 被遮蔽，但保存的 key 是**明文，未加密**：
+
+- Windows：`%APPDATA%/jevrev/config.json`，未设置时使用 `~/AppData/Roaming`。
+- macOS：`~/Library/Application Support/jevrev/config.json`。
+- Linux：`$XDG_CONFIG_HOME/jevrev/config.json`，未设置时使用 `~/.config`。
+
+可用 `JEVREV_CONFIG_PATH` 指定其他文件。非空环境变量优先于保存值；显式 CLI
+选项优先于地址和 provider 默认值。仅使用环境变量或 replay 时，用
+`jevrev --no-tui ...` 或 `JEVREV_NO_TUI=1` 跳过表单。管道命令及
+`--help` / `--version` 不弹出表单。Esc 退出表单且不保存，随后仍会执行原命令；
+若仍需要 key，命令可能失败。参见[配置与重置说明](CONFIGURATION.md)。下方云端
+示例使用环境变量，不保存 key。
 
 ### 云端 Jev
 

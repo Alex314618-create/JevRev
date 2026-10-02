@@ -77,8 +77,13 @@ contracts.
 
 ## Configure hosted Jev
 
-Set `JEVREV_JEV_API_KEY` in the current shell. Do not put the key in CLI
-arguments, proposal files, evidence, or source control.
+Interactive first use can save provider settings and a masked-input API key to
+your user configuration. The saved key is plaintext. See [configuration](CONFIGURATION.md)
+for platform paths, precedence, skip behavior and reset instructions.
+
+For environment-only use, set `JEVREV_JEV_API_KEY` in the current shell and add
+`--no-tui` before the command to skip setup. Do not put the key in CLI arguments,
+proposal files, evidence, or source control.
 
 PowerShell:
 
