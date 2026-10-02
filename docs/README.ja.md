@@ -205,7 +205,26 @@ Up / Downでセッションを選び、Enterで開きます。`l` / `o`とSpace�
 
 ## Jevまたはローカルモデルに接続する
 
-Sift、Decide、Loop auditは同じprovider interfaceを使います。hosted Jev、local SemIf、またはoffline実行用のreplay fileに接続できます。認証情報は環境変数に置き、command argument、campaign file、evidenceには書かないでください。
+Sift、Decide、Loop auditは同じprovider interfaceを使います。hosted Jev、local SemIf、またはoffline実行用のreplay fileに接続できます。認証情報をcommand argument、campaign file、evidence、バージョン管理に含めないでください。
+
+### 初回設定
+
+対話型ターミナルで`jevrev`やprovider関連コマンドを実行し、選択したhosted
+providerにkeyがない場合、設定フォームが表示されます。`jev`、`local`、`semif`
+を選び、endpointとJev用keyを入力してEnterで保存します。入力中のkeyは伏せ字
+ですが、保存されるkeyは**平文であり、暗号化されません**。
+
+- Windows：`%APPDATA%/jevrev/config.json`。未設定時は`~/AppData/Roaming`。
+- macOS：`~/Library/Application Support/jevrev/config.json`。
+- Linux：`$XDG_CONFIG_HOME/jevrev/config.json`。未設定時は`~/.config`。
+
+`JEVREV_CONFIG_PATH`で別のファイルを指定できます。空でない環境変数は保存値より
+優先され、明示的なCLIオプションはendpointとproviderの既定値より優先されます。
+環境変数のみ、またはreplayで実行する場合、`jevrev --no-tui ...`か
+`JEVREV_NO_TUI=1`でフォームを省略できます。パイプ実行、`--help`、`--version`
+では表示されません。Escは保存せずにフォームを閉じ、その後コマンドは続行します。
+keyが必要なら失敗する場合があります。[設定とリセットの説明](CONFIGURATION.md)
+を参照してください。以下のhosted例は環境変数を使い、keyを保存しません。
 
 ### ホスト型Jev
 

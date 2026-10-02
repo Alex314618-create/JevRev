@@ -36,19 +36,19 @@
   "active_work": {
     "system_ids": [
       "documentation",
-      "flagship-visual",
-      "jevloop",
+      "providers-protocol",
       "packaging-release"
     ],
-    "objective": "Integrate the post-publication origin/main head at 7cbe68a, preserve the completed flagship README without a follow-up copy pass, verify the combined Sift, JevLoop, and showcase branch, and update pull request 3 from the user fork.",
+    "objective": "Synchronize three README languages and install guides with shipped provider setup at 265c9ea, including storage, precedence, skip and reset behavior.",
     "acceptance": [
-      "All upstream JevLoop and Sift hardening implementation, tests, examples, and protocol documentation are present without losing the flagship showcase files.",
-      "README remains the completed flagship version from bdaff77; its now-stale JevLoop roadmap label is recorded as explicit follow-up debt rather than silently changed.",
-      "Shared technical files preserve bounded Sift reconsideration, trusted evidence tooling, and the separate JevLoop round-evidence boundary.",
-      "Check, build, 195 tests, demos, packaging, diff, and governance verification pass on the merged branch.",
-      "The updated branch is pushed to the DuaNapic fork and pull request 3 targets Alex314618-create/JevRev main."
+      "All three README languages describe actual setup conditions, plaintext storage, paths and skip behavior.",
+      "Canonical configuration documentation ships in the package and existing provider/TUI tests pass.",
+      "The diff remains limited to documentation, package contents and verification records; rollback is a commit revert."
     ],
-    "status": "completed"
+    "status": "completed",
+    "evidence": [
+      ".codex/product-governance/CONFIGURATION_VERIFICATION_2026-10-02.md"
+    ]
   },
   "balance_policy": {
     "maximum_must_have_spread": 2,
@@ -462,6 +462,6 @@
       "text": "Supplemental Lighthouse simulated mobile run scored performance 86 with LCP 4.2 s, exceeding the aspirational 2.5 s target; accessibility 100, CLS 0, TBT 0. Protected PNG compression is an advisory, not an established LCP cause. Broader performance optimization remains outside the bounded handoff and needs a separately scoped follow-up."
     }
   ],
-  "last_updated": "2026-09-23",
-  "last_audited": "2026-09-23"
+  "last_updated": "2026-10-02",
+  "last_audited": "2026-10-02"
 }

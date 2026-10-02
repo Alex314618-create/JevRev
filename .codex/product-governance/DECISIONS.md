@@ -139,3 +139,11 @@
 - Consequences: The PR remains the single review surface for the flagship showcase plus the latest Sift and JevLoop baseline. Public README reconciliation remains explicit follow-up debt. The final verification order builds before tests so the new script-side `dist/io/json.js` dependency is present in a previously built workspace.
 - Affected systems: candidate-funnel, evidence-capture, providers-protocol, documentation, packaging-release
 - Supersedes: none
+
+## D-20261002-01 Synchronize shipped provider setup documentation
+
+- Status: accepted
+- Baseline: 265c9ea
+- Decision: document the existing setup guard, plaintext user config, precedence, skip and reset behavior in all three README languages and both install guides; ship the canonical configuration reference.
+- Scope: documentation and package contents only. Existing P5 phase history and system maturity are not reclassified. Runtime semantics remain tested, including form exit followed by command continuation.
+- Evidence and rollback: CONFIGURATION_VERIFICATION_2026-10-02.md; revert the bounded documentation commit.
