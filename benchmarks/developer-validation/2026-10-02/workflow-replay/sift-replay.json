@@ -1,0 +1,135 @@
+{
+  "model": "jev-sift-fixture",
+  "candidate_order": [
+    "regex-shortcut",
+    "indexed-state-machine"
+  ],
+  "answers": {
+    "candidate_0_goal_fit": {
+      "type": "score",
+      "score": 3,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 1
+      }
+    },
+    "candidate_0_constraint_fit": {
+      "type": "noul",
+      "noul": 0.94
+    },
+    "candidate_0_feasibility": {
+      "type": "score",
+      "score": 2.9,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 0
+      }
+    },
+    "candidate_0_validation_quality": {
+      "type": "score",
+      "score": 2.7,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 0
+      }
+    },
+    "candidate_0_execution_value": {
+      "type": "noul",
+      "noul": 0.94
+    },
+    "candidate_1_goal_fit": {
+      "type": "score",
+      "score": 2.7,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 0
+      }
+    },
+    "candidate_1_constraint_fit": {
+      "type": "noul",
+      "noul": 0.86
+    },
+    "candidate_1_feasibility": {
+      "type": "score",
+      "score": 2.6,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 0
+      }
+    },
+    "candidate_1_validation_quality": {
+      "type": "score",
+      "score": 2.7,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 1,
+        "3": 0
+      }
+    },
+    "candidate_1_execution_value": {
+      "type": "noul",
+      "noul": 0.86
+    },
+    "pair_0_1_duplicate": {
+      "type": "noul",
+      "noul": 0.04
+    }
+  },
+  "usage": {
+    "input_tokens": 320,
+    "output_tokens": 44
+  }
+}

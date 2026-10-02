@@ -1,0 +1,98 @@
+{
+  "kind": "jevrev.decide-result",
+  "schema_version": "1",
+  "campaign_id": "jvc_2bc7eb38c2f8",
+  "decision": "winner",
+  "winner": "indexed-state-machine",
+  "merge_candidates": [],
+  "eligible": [
+    "indexed-state-machine"
+  ],
+  "evaluations": [
+    {
+      "candidate_id": "regex-shortcut",
+      "status": "rejected",
+      "score": null,
+      "confidence": null,
+      "reasons": [
+        "REQUIREMENT_FAILED",
+        "PROBE_EVIDENCE_FAILED",
+        "REQUIRED_COMMAND_FAILED"
+      ],
+      "objective": {
+        "required_commands_passed": false,
+        "requirements_complete": true,
+        "within_budget": true,
+        "metrics": [
+          {
+            "metric_id": "throughput",
+            "criterion_id": "speed",
+            "unit": "runs/s",
+            "direction": "higher",
+            "sample_count": {
+              "baseline": 7,
+              "candidate": 7
+            },
+            "baseline_mean": 1522.251204,
+            "candidate_mean": 33983.965273,
+            "baseline_sample_sd": 85.444474,
+            "candidate_sample_sd": 3619.361213,
+            "relative_improvement": 21.324808
+          }
+        ]
+      },
+      "semantic": null
+    },
+    {
+      "candidate_id": "indexed-state-machine",
+      "status": "eligible",
+      "score": 0.928,
+      "confidence": 0.84,
+      "reasons": [],
+      "objective": {
+        "required_commands_passed": true,
+        "requirements_complete": true,
+        "within_budget": true,
+        "metrics": [
+          {
+            "metric_id": "throughput",
+            "criterion_id": "speed",
+            "unit": "runs/s",
+            "direction": "higher",
+            "sample_count": {
+              "baseline": 7,
+              "candidate": 7
+            },
+            "baseline_mean": 1571.371768,
+            "candidate_mean": 7446.052696,
+            "baseline_sample_sd": 41.868706,
+            "candidate_sample_sd": 255.408341,
+            "relative_improvement": 3.738568
+          }
+        ]
+      },
+      "semantic": {
+        "evidence_support": 0.9333,
+        "reproducibility": 0.9333,
+        "residual_risk_acceptance": 0.92,
+        "shipping_value": 0.92
+      }
+    }
+  ],
+  "next_action": {
+    "type": "integrate_winner",
+    "candidate_ids": [
+      "indexed-state-machine"
+    ]
+  },
+  "audit": {
+    "policy": "decide-v1",
+    "provider_profile": "replay",
+    "campaign_sha256": "2081f7ae347bfafec419013558747b16fbcad199e1e141f32c3651441cf6b798",
+    "evidence_sha256": "11db5cd3f8e1e6a4084f5f0f5a8543f8dc8c6487234a6dd46cd9f51abb2cf7bd",
+    "usage": {
+      "input_tokens": 480,
+      "output_tokens": 16
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "kind": "jevrev.activation-decision",
+  "schema_version": "1",
+  "run_id": "jva_48224a4e72a6",
+  "policy": {
+    "name": "activation-v1",
+    "mode": "shadow",
+    "thresholds": {
+      "minimum_expected_loss": 0.35,
+      "minimum_advantage": 0.05,
+      "minimum_candidates": 2
+    }
+  },
+  "task": {
+    "goal": "Make the parser at least 2x faster without changing its public API",
+    "task_id": "jvt_a2dfffee7536"
+  },
+  "assessment": {
+    "candidate_count": 5,
+    "wrong_path_loss": 0.9,
+    "exploration_cost": 0.25,
+    "mechanism_diversity": 0.9,
+    "constraint_interaction": 0.8,
+    "uncertainty": 0.85,
+    "probeability": 0.8,
+    "reversibility": 0.2,
+    "existing_evidence": 0.1
+  },
+  "calculation": {
+    "structural_factor": 0.9235,
+    "adjusted_wrong_path_loss": 0.8312,
+    "adjusted_exploration_cost": 0.2135,
+    "advantage": 0.6176
+  },
+  "decision": "sift",
+  "shadow": true,
+  "reasons": [
+    {
+      "code": "DIVERSE_MECHANISMS",
+      "signal": "mechanism_diversity"
+    },
+    {
+      "code": "INTERACTING_CONSTRAINTS",
+      "signal": "constraint_interaction"
+    },
+    {
+      "code": "CHEAP_TO_PROBE",
+      "signal": "probeability"
+    },
+    {
+      "code": "LOSS_OUTWEIGHS_EXPLORATION_COST"
+    }
+  ]
+}

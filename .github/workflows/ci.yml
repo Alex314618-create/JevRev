@@ -35,3 +35,15 @@ jobs:
       - run: npm run demo:workflow
       - run: npm run demo:loop
       - run: npm run demo:engineering
+      - name: Verify archived developer evidence
+        run: node scripts/verify-developer-trial.mjs
+      - name: Run isolated developer workflow smoke
+        run: node scripts/run-developer-smoke.mjs
+      - name: Retain developer smoke traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: developer-smoke-${{ matrix.os }}
+          path: benchmarks/results/developer-smoke/
+          if-no-files-found: ignore
+          retention-days: 14

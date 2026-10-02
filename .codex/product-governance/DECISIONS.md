@@ -147,3 +147,12 @@
 - Decision: document the existing setup guard, plaintext user config, precedence, skip and reset behavior in all three README languages and both install guides; ship the canonical configuration reference.
 - Scope: documentation and package contents only. Existing P5 phase history and system maturity are not reclassified. Runtime semantics remain tested, including form exit followed by command continuation.
 - Evidence and rollback: CONFIGURATION_VERIFICATION_2026-10-02.md; revert the bounded documentation commit.
+
+## D-20261002-02 Preserve validation gaps while recording current evidence
+
+- Status: accepted
+- Baseline: 265c9ea
+- Decision: add a disposable CLI smoke with success/failure traces, archive a current replay run, and define human attention, activation and matched-comparison records. Late activation remains a manual shadow reassessment under the existing Loop contract.
+- Boundary: no new runtime policy, automatic call, dashboard, schema migration or maturity claim. Human study and live matched comparison remain pending; the PTY wrapper discrepancy is retained.
+- Evidence: docs/DEVELOPER_TRIAL_2026-10-02.md and its artifact manifest.
+- Rollback: revert the bounded validation commit; original runtime and user configuration are unaffected.

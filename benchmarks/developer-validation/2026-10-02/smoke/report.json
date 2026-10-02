@@ -1,0 +1,83 @@
+{
+  "kind": "jevrev.developer-smoke",
+  "schema_version": 1,
+  "run_id": "adf42523-998c-409a-937c-062768fa1c47",
+  "evidence_directory": "benchmarks/results/developer-smoke/adf42523-998c-409a-937c-062768fa1c47",
+  "measurement_class": "machine_smoke_not_human_study",
+  "timestamp_utc": "2026-10-02T04:25:05.441Z",
+  "source_revision": "265c9eaff6e6f18d72dbb7caa029d0ffd516f627",
+  "cli_sha256": "e8eaf20de43198c38f255cf63add2aaed07e040838d235a47d0196f9db38cda6",
+  "node": "v24.13.1",
+  "platform": "win32",
+  "runner_sha256": "081009962c1d58d4ae498200df7689586e0ea855b5813daddc52caffc6ffbdcd",
+  "provider_calls": 0,
+  "human_orientation_ms": null,
+  "human_interruptions": null,
+  "steps": [
+    {
+      "id": "register-host",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 329,
+      "stdout_sha256": "368bf0aa67bee08777ce3b7f3112a84adf0ab0e90658080add0f495b0d4ff8a3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "enable-monitor",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 322,
+      "stdout_sha256": "71247581aa1491cf5290df86b1ce702d23d0edee7fccf09ea930a6f36ad8d91a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "reject-invalid-monitor",
+      "expected_exit": 2,
+      "exit": 2,
+      "wall_ms": 310,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "cf38c40769dc07907254d7fdbb505e1ad69fa8c168f8a0711f2fe8dc7e6221c9"
+    },
+    {
+      "id": "read-after-error",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 312,
+      "stdout_sha256": "97523feaafb7059ab5eb09d326ad0d3eeacdffdba2d6ca449231b84d4d63d094",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "rollback-monitor",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 335,
+      "stdout_sha256": "0a8b0a2a723434e2e586255b19f864725917ede18916c07cd01367395d3fa9cd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "read-new-process",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 313,
+      "stdout_sha256": "cf970637e758929e73b95123a98a4794dc0e67b4114f23d516340f2cc87933a1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "shadow-bypass",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 308,
+      "stdout_sha256": "a49b6cdb5c7e76995d7731df1ef475cee0c996b6f53e307d692e8f7c61681ac5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "shadow-sift",
+      "expected_exit": 0,
+      "exit": 0,
+      "wall_ms": 313,
+      "stdout_sha256": "1fbca1744d9caa7c47753ecdceba8de3843940a68d04785129dce8d43d7cac87",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "passed": true
+}
