@@ -1,0 +1,30 @@
+{
+  "kind": "jevrev.terminal-observation",
+  "measurement_class": "agent_operated_observation_not_human_study",
+  "source_revision": "265c9eaff6e6f18d72dbb7caa029d0ffd516f627",
+  "platform": "win32",
+  "terminal": {
+    "width": 80,
+    "height": 24
+  },
+  "sequence": [
+    "open Sessions",
+    "c to Config",
+    "q restores alternate screen",
+    "reopen Config",
+    "q restores alternate screen"
+  ],
+  "navigation": {
+    "version": 1,
+    "page": "config",
+    "session_id": null
+  },
+  "main_return": 0,
+  "wrapper_exit_codes": [
+    0,
+    1,
+    1
+  ],
+  "limit": "Tool PTY wrappers returned undiagnosed exit 1 on reopens; instrumented exported main returned 0. Transcript is tool output, not archived screenshots. No human understanding time recorded.",
+  "human_orientation_ms": null
+}

@@ -73,3 +73,28 @@ record the host assessment and the human's eventual choice, inspect false
 positive/negative activations, and decide whether an active or opt-in gate is
 warranted. Do not turn this command into an automatic bypass until that study
 has been completed.
+
+## Workflow placement and late uncertainty
+
+The component is JevSift; `activation` is its shadow assessment, not a Sift call.
+The current policy requires an estimated candidate count and mechanism diversity,
+so the host first names plausible mechanisms without building a full campaign.
+Run the shadow assessment before paying for candidate elaboration/probes. The
+host may accept or reject the recommendation; preserve its reason either way.
+
+Reassess only when new evidence changes the mechanism choice, wrong-path cost,
+constraints or probeability. Retain the prior assessment, source revision and
+reason for reassessment under the same task ID. Do not resubmit unchanged inputs
+each Loop round or interpret repeated shadow decisions as independent tasks.
+
+Loop `replan` is a bounded instruction for the next round, not permission to
+invoke Sift automatically or replace its frozen contract. If replan exposes
+competing mechanisms, the host can record a new shadow assessment and optionally
+prepare a Sift campaign. Any changed scope/acceptance still needs the existing
+Loop approval boundary. Sift does not certify completion. Long can observe the
+recorded outcome without turning it into trusted implementation evidence.
+
+These are manual integration guidelines, not new CLI orchestration or a proven
+trigger policy. [Developer trial annotations](DEVELOPER_TRIAL.md) define the
+missing human evaluation; [matched comparisons](../benchmarks/COMPARISON_PROTOCOL.md)
+define the cost and quality boundary. The 30–50 task study remains pending.

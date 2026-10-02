@@ -35,19 +35,20 @@
   },
   "active_work": {
     "system_ids": [
-      "documentation",
-      "providers-protocol",
-      "packaging-release"
+      "experiments",
+      "agent-integration",
+      "documentation"
     ],
-    "objective": "Synchronize three README languages and install guides with shipped provider setup at 265c9ea, including storage, precedence, skip and reset behavior.",
+    "objective": "Record current CLI/TUI workflow acceptance and define comparable human/activation studies without enabling automatic activation.",
     "acceptance": [
-      "All three README languages describe actual setup conditions, plaintext storage, paths and skip behavior.",
-      "Canonical configuration documentation ships in the package and existing provider/TUI tests pass.",
-      "The diff remains limited to documentation, package contents and verification records; rollback is a commit revert."
+      "Eight CLI steps and intentional runner failure retain verifiable raw evidence.",
+      "Current replay, actual terminal observations and human/live study gaps are distinguished.",
+      "Activation re-entry respects frozen Loop contracts; comparisons define equal budgets and common acceptance."
     ],
     "status": "completed",
     "evidence": [
-      ".codex/product-governance/CONFIGURATION_VERIFICATION_2026-10-02.md"
+      "docs/DEVELOPER_TRIAL_2026-10-02.md",
+      "benchmarks/developer-validation/2026-10-02/manifest.json"
     ]
   },
   "balance_policy": {
@@ -460,6 +461,12 @@
       "severity": "medium",
       "status": "open",
       "text": "Supplemental Lighthouse simulated mobile run scored performance 86 with LCP 4.2 s, exceeding the aspirational 2.5 s target; accessibility 100, CLS 0, TBT 0. Protected PNG compression is an advisory, not an established LCP cause. Broader performance optimization remains outside the bounded handoff and needs a separately scoped follow-up."
+    },
+    {
+      "id": "risk-human-validation-pending",
+      "severity": "high",
+      "status": "open",
+      "text": "The October technical pass does not establish human TUI understanding/attention, a 30–50 task activation corpus, or live matched-model benefit. docs/DEVELOPER_TRIAL_2026-10-02.md records observed behavior and the PTY wrapper limitation; Issues 7 and 8 remain open."
     }
   ],
   "last_updated": "2026-10-02",

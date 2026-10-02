@@ -2,6 +2,11 @@
 
 Status: implementation design and review record for the three-page CLI cockpit.
 
+Human attention acceptance remains open. See [the developer trial
+method](DEVELOPER_TRIAL.md) and [current technical acceptance
+record](DEVELOPER_TRIAL_2026-10-02.md); terminal/state checks do not measure a
+participant's understanding time or missed interruptions.
+
 ## Product decisions
 
 1. The CLI TUI has exactly three top-level pages, in this order: Sessions,

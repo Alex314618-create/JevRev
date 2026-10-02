@@ -1,0 +1,213 @@
+{
+  "kind": "jevrev.campaign",
+  "schema_version": "1",
+  "campaign_id": "jvc_2bc7eb38c2f8",
+  "request": {
+    "version": "1",
+    "task": {
+      "goal": "Increase delimiter-counting throughput without changing quoted-field behavior.",
+      "context": "A JavaScript CSV scanner counts delimiters outside quoted fields. The baseline is correct but allocates an array for every input.",
+      "constraints": [
+        {
+          "id": "correctness",
+          "text": "Quoted delimiters and escaped quotes must retain baseline behavior.",
+          "kind": "hard"
+        },
+        {
+          "id": "api",
+          "text": "Keep the countDelimiters(input) API.",
+          "kind": "hard"
+        }
+      ],
+      "success": [
+        {
+          "id": "speed",
+          "text": "Repeated throughput is higher than the allocation-heavy baseline."
+        },
+        {
+          "id": "tests",
+          "text": "The correctness probe passes all quoted-field cases."
+        }
+      ]
+    },
+    "budget": {
+      "max_survivors": 2
+    },
+    "candidates": [
+      {
+        "id": "regex-shortcut",
+        "title": "Count delimiters with one regex",
+        "summary": "Replace the allocating state scan with a compact native regex.",
+        "mechanism": "Use a global comma regex and return the number of matches.",
+        "assumptions": [
+          "Native regex scanning dominates a JavaScript loop"
+        ],
+        "risks": [
+          "The shortcut may count delimiters inside quoted fields"
+        ],
+        "validation": [
+          "Run quoted-field and escaped-quote correctness cases.",
+          "Measure repeated throughput against the baseline."
+        ],
+        "effort": "small"
+      },
+      {
+        "id": "indexed-state-machine",
+        "title": "Use an allocation-free indexed state machine",
+        "summary": "Preserve quote state while scanning code units without an intermediate array.",
+        "mechanism": "Walk the input by index, track quoted state, and skip escaped quote pairs.",
+        "assumptions": [
+          "Array materialization is a material baseline cost"
+        ],
+        "risks": [
+          "Quote transition logic could diverge from the baseline"
+        ],
+        "validation": [
+          "Run quoted-field and escaped-quote correctness cases.",
+          "Measure repeated throughput against the baseline."
+        ],
+        "effort": "small"
+      }
+    ]
+  },
+  "sift": {
+    "version": "1",
+    "run_id": "jvr_2e44f048e914",
+    "model": "jev-sift-fixture",
+    "policy": {
+      "name": "default-v1",
+      "provider_profile": "replay",
+      "max_survivors": 2,
+      "thresholds": {
+        "goal_fit": 0.34,
+        "constraint_fit": 0.55,
+        "feasibility": 0.34,
+        "validation_quality": 0.25,
+        "execution_value": 0.45,
+        "confidence": 0.2,
+        "duplicate": 0.75,
+        "duplicate_confidence": 0.3
+      },
+      "weights": {
+        "goal_fit": 0.3,
+        "constraint_fit": 0.2,
+        "feasibility": 0.2,
+        "validation_quality": 0.1,
+        "execution_value": 0.2
+      },
+      "effort_multipliers": {
+        "small": 1,
+        "medium": 0.94,
+        "large": 0.86
+      }
+    },
+    "summary": {
+      "evaluated": 2,
+      "kept": 2,
+      "shortlisted": 2,
+      "review": 0,
+      "rejected": 0
+    },
+    "next_action": "implement",
+    "empty_reason": "none",
+    "selected": [
+      "regex-shortcut",
+      "indexed-state-machine"
+    ],
+    "shortlist": [
+      "regex-shortcut",
+      "indexed-state-machine"
+    ],
+    "decisions": [
+      {
+        "candidate_id": "regex-shortcut",
+        "title": "Count delimiters with one regex",
+        "status": "keep",
+        "rank": 1,
+        "score": 0.9593,
+        "confidence": 0.88,
+        "signals": {
+          "goal_fit": 1,
+          "constraint_fit": 0.94,
+          "feasibility": 0.9667,
+          "validation_quality": 0.9,
+          "execution_value": 0.94
+        },
+        "reasons": []
+      },
+      {
+        "candidate_id": "indexed-state-machine",
+        "title": "Use an allocation-free indexed state machine",
+        "status": "keep",
+        "rank": 2,
+        "score": 0.8773,
+        "confidence": 0.72,
+        "signals": {
+          "goal_fit": 0.9,
+          "constraint_fit": 0.86,
+          "feasibility": 0.8667,
+          "validation_quality": 0.9,
+          "execution_value": 0.86
+        },
+        "reasons": []
+      }
+    ],
+    "usage": {
+      "input_tokens": 320,
+      "output_tokens": 44
+    }
+  },
+  "work_orders": [
+    {
+      "candidate_id": "regex-shortcut",
+      "candidate_sha256": "5f7f8db7d3bdea91e55a69912102a63b663ffe5bfce51fadbe3677045c3f6975",
+      "hypothesis": "Use a global comma regex and return the number of matches.",
+      "probe_instruction": "Build the smallest reversible probe that can falsify this mechanism: Use a global comma regex and return the number of matches.",
+      "required_evidence": [
+        {
+          "id": "probe-1",
+          "description": "Run quoted-field and escaped-quote correctness cases."
+        },
+        {
+          "id": "probe-2",
+          "description": "Measure repeated throughput against the baseline."
+        }
+      ],
+      "budget": {
+        "max_wall_ms": 300000,
+        "max_changed_files": 5
+      },
+      "stop_conditions": [
+        "Stop when every required evidence item has a recorded result.",
+        "Stop immediately if a hard constraint is violated.",
+        "Stop when the work-order time or changed-file budget is exhausted."
+      ]
+    },
+    {
+      "candidate_id": "indexed-state-machine",
+      "candidate_sha256": "d1de6bd879cbf50534d3e19d56d78c36ff7b7860eb8d3a3ad2f2637c5b88a7fd",
+      "hypothesis": "Walk the input by index, track quoted state, and skip escaped quote pairs.",
+      "probe_instruction": "Build the smallest reversible probe that can falsify this mechanism: Walk the input by index, track quoted state, and skip escaped quote pairs.",
+      "required_evidence": [
+        {
+          "id": "probe-1",
+          "description": "Run quoted-field and escaped-quote correctness cases."
+        },
+        {
+          "id": "probe-2",
+          "description": "Measure repeated throughput against the baseline."
+        }
+      ],
+      "budget": {
+        "max_wall_ms": 300000,
+        "max_changed_files": 5
+      },
+      "stop_conditions": [
+        "Stop when every required evidence item has a recorded result.",
+        "Stop immediately if a hard constraint is violated.",
+        "Stop when the work-order time or changed-file budget is exhausted."
+      ]
+    }
+  ],
+  "review_work_orders": []
+}

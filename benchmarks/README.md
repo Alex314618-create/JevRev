@@ -1,5 +1,10 @@
 # JevRev benchmark harness
 
+For prospective live workflow comparisons, use [the matched comparison
+protocol](COMPARISON_PROTOCOL.md). The [2026-10-02 developer acceptance
+record](../docs/DEVELOPER_TRIAL_2026-10-02.md) archives current CLI checks and
+replay evidence while keeping human-study and live-provider gaps explicit.
+
 `benchmark-demos.mjs` is a repeatable decision-quality harness, not a claim
 that a shortlist by itself changes production behavior. Each scenario has a
 pre-registered scenario rubric for its candidate IDs. Those labels are a

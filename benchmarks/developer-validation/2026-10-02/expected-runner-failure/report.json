@@ -1,0 +1,28 @@
+{
+  "kind": "jevrev.developer-smoke",
+  "schema_version": 1,
+  "run_id": "093ddfbc-1eff-465f-afc2-c7d998233487",
+  "evidence_directory": "benchmarks/results/developer-smoke/093ddfbc-1eff-465f-afc2-c7d998233487",
+  "measurement_class": "machine_smoke_not_human_study",
+  "timestamp_utc": "2026-10-02T04:18:42.515Z",
+  "source_revision": "265c9eaff6e6f18d72dbb7caa029d0ffd516f627",
+  "cli_sha256": null,
+  "node": "v24.13.1",
+  "platform": "win32",
+  "runner_sha256": "e3d833be22f1b3c0a11470f74754bfdede8e83ffae2c18e84e5fd14ab3203afa",
+  "provider_calls": 0,
+  "human_orientation_ms": null,
+  "human_interruptions": null,
+  "steps": [
+    {
+      "id": "register-host",
+      "expected_exit": 0,
+      "exit": 1,
+      "wall_ms": 75,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "a8d66f3be1979d1c453d305558ff598f7dade59ec5a4b2d143b344cdca983dd8"
+    }
+  ],
+  "passed": false,
+  "failure": "register-host: unexpected exit\n\n1 !== 0\n"
+}

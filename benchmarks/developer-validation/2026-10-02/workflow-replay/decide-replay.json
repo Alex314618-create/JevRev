@@ -1,0 +1,54 @@
+{
+  "model": "jev-decide-fixture",
+  "candidate_order": [
+    "indexed-state-machine"
+  ],
+  "answers": {
+    "finalist_0_evidence_support": {
+      "type": "score",
+      "score": 2.8,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.2,
+        "3": 0.8
+      }
+    },
+    "finalist_0_reproducibility": {
+      "type": "score",
+      "score": 2.8,
+      "confidence": 0.9,
+      "legend": {
+        "0": "bad",
+        "1": "weak",
+        "2": "good",
+        "3": "strong"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0.2,
+        "3": 0.8
+      }
+    },
+    "finalist_0_residual_risk_acceptance": {
+      "type": "noul",
+      "noul": 0.92
+    },
+    "finalist_0_shipping_value": {
+      "type": "noul",
+      "noul": 0.92
+    }
+  },
+  "usage": {
+    "input_tokens": 480,
+    "output_tokens": 16
+  }
+}

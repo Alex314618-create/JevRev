@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "id": "host_other_developer-smoke",
+  "component": "session",
+  "source": "host",
+  "host": "other",
+  "host_session_id": "developer-smoke",
+  "title": "Developer smoke",
+  "goal": "Verify monitor rollback",
+  "status": "active",
+  "started_at": "2026-10-02T04:25:03.190Z",
+  "updated_at": "2026-10-02T04:25:04.478Z",
+  "agent_work_ms": null,
+  "monitoring": {
+    "loop": false,
+    "long": false
+  },
+  "summary": "other session registered",
+  "details": [
+    "Host session developer-smoke"
+  ],
+  "kanban": {
+    "in_progress": [],
+    "attention": [],
+    "verified": []
+  }
+}

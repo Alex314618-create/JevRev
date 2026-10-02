@@ -1,1 +1,3 @@
 benchmarks/engineering-showcase/** text eol=lf
+benchmarks/developer-validation/** -text
+scripts/run-developer-smoke.mjs text eol=lf
